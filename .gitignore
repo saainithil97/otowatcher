@@ -1,0 +1,12 @@
+# Exclude images and logs (too large for git)
+images/
+logs/
+*.log
+
+# Exclude sensitive rclone config
+.config/
+
+# Exclude temporary files
+*.tmp
+*.pyc
+__pycache__/

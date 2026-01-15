@@ -1,0 +1,14 @@
+{
+  "capture_interval_seconds": 300,
+  "lights_only_mode": false,
+  "light_threshold": 20,
+  "keep_days": 7,
+  "image_quality": 90,
+  "resolution": {
+    "width": 3280,
+    "height": 2464
+  },
+  "storage_path": "/home/saainithil97/projects/timelapse/images",
+  "log_path": "/home/saainithil97/projects/timelapse/logs/timelapse.log"
+}
+
