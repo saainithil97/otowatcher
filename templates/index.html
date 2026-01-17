@@ -1,282 +1,481 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐠 Aquarium Timelapse</title>
+    <title>Aquarium Timelapse</title>
     
-    <!-- Tailwind CSS + DaisyUI -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.24/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #191919;
+                --bg-secondary: #2c2c2c;
+                --bg-tertiary: #3a3a3a;
+                --text-primary: #ffffff;
+                --text-secondary: #9b9b9b;
+                --border: #3a3a3a;
+                --accent: #3b82f6;
+            }
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-primary: #ffffff;
+                --bg-secondary: #f7f7f7;
+                --bg-tertiary: #e8e8e8;
+                --text-primary: #1a1a1a;
+                --text-secondary: #6b6b6b;
+                --border: #e0e0e0;
+                --accent: #2563eb;
+            }
         }
         
-        .animate-fade-in {
-            animation: fadeIn 0.5s ease-out;
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
         }
         
-        .image-container {
-            position: relative;
-            overflow: hidden;
-            border-radius: 1rem;
+        .sidebar {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
         }
         
-        .image-container img {
-            transition: transform 0.3s ease;
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
         }
         
-        .image-container:hover img {
-            transform: scale(1.02);
+        .btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            transition: all 0.15s ease;
+        }
+        
+        .btn:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent);
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background: #10b98120;
+            color: #10b981;
+        }
+        
+        .status-inactive {
+            background: #ef444420;
+            color: #ef4444;
+        }
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        
+        textarea, input, select {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+        
+        textarea:focus, input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .nav-item {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        
+        .nav-item:hover {
+            background: var(--bg-tertiary);
+        }
+        
+        .nav-item.active {
+            background: var(--bg-tertiary);
+            font-weight: 500;
+        }
+        
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 min-h-screen">
-    <!-- Navbar -->
-    <div class="navbar glass-effect text-white mb-8 sticky top-0 z-50">
-        <div class="flex-1">
-            <a href="/" class="btn btn-ghost text-xl">
-                <i class="fas fa-fish"></i>
-                Aquarium Timelapse
-            </a>
-        </div>
-        <div class="flex-none gap-2">
-            <a href="/gallery" class="btn btn-ghost">
-                <i class="fas fa-images"></i>
-                Gallery
-            </a>
-            <div class="dropdown dropdown-end">
-                <label tabindex="0" class="btn btn-ghost btn-circle">
-                    <i class="fas fa-cog"></i>
-                </label>
-                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow glass-effect rounded-box w-52">
-                    <li><a onclick="toggleTheme()"><i class="fas fa-palette"></i> Toggle Theme</a></li>
-                    <li><a onclick="window.open('/latest.jpg', '_blank')"><i class="fas fa-download"></i> Download Latest</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <div class="container mx-auto px-4 pb-8 max-w-7xl">
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 animate-fade-in">
-            <!-- Total Images -->
-            <div class="stats shadow glass-effect">
-                <div class="stat">
-                    <div class="stat-figure text-primary">
-                        <i class="fas fa-images text-3xl"></i>
-                    </div>
-                    <div class="stat-title text-white/70">Total Images</div>
-                    <div class="stat-value text-primary">{{ stats.total_images }}</div>
-                    <div class="stat-desc text-white/50">All time</div>
-                </div>
-            </div>
-            
-            <!-- Today's Images -->
-            <div class="stats shadow glass-effect">
-                <div class="stat">
-                    <div class="stat-figure text-secondary">
-                        <i class="fas fa-calendar-day text-3xl"></i>
-                    </div>
-                    <div class="stat-title text-white/70">Today</div>
-                    <div class="stat-value text-secondary">{{ stats.today_images }}</div>
-                    <div class="stat-desc text-white/50">Captures</div>
-                </div>
-            </div>
-            
-            <!-- Storage -->
-            <div class="stats shadow glass-effect">
-                <div class="stat">
-                    <div class="stat-figure text-accent">
-                        <i class="fas fa-database text-3xl"></i>
-                    </div>
-                    <div class="stat-title text-white/70">Storage</div>
-                    <div class="stat-value text-accent">{{ stats.disk_usage_gb }}</div>
-                    <div class="stat-desc text-white/50">GB used</div>
-                </div>
-            </div>
-            
-            <!-- Last Capture -->
-            <div class="stats shadow glass-effect">
-                <div class="stat">
-                    <div class="stat-figure text-info">
-                        <i class="fas fa-clock text-3xl"></i>
-                    </div>
-                    <div class="stat-title text-white/70">Last Capture</div>
-                    {% if stats.latest_time %}
-                    <div class="stat-value text-info text-xl">{{ stats.latest_time.strftime('%H:%M') }}</div>
-                    <div class="stat-desc text-white/50">{{ stats.latest_time.strftime('%b %d') }}</div>
-                    {% else %}
-                    <div class="stat-value text-info text-xl">--:--</div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        {% if has_image %}
-        <!-- Main Image Card -->
-        <div class="card glass-effect shadow-2xl animate-fade-in">
-            <div class="card-body">
-                <h2 class="card-title text-white text-2xl mb-4">
-                    <i class="fas fa-camera"></i>
-                    Latest Capture
-                    <span class="badge badge-success badge-lg">LIVE</span>
-                </h2>
+<body class="min-h-screen">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="sidebar w-64 flex-shrink-0 overflow-y-auto">
+            <div class="p-6">
+                <h1 class="text-xl font-semibold mb-8">Aquarium Timelapse</h1>
                 
-                <!-- Image Container -->
-                <div class="image-container bg-base-300 rounded-lg overflow-hidden">
-                    <img id="latest-image" 
-                         src="/latest.jpg?t={{ stats.latest_time.timestamp() if stats.latest_time else 0 }}" 
-                         alt="Latest aquarium photo"
-                         class="w-full h-auto"
-                         loading="lazy">
-                    
-                    <!-- Loading Overlay -->
-                    <div id="loading-overlay" class="hidden absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <span class="loading loading-spinner loading-lg text-primary"></span>
+                <nav class="space-y-1">
+                    <div class="nav-item active" onclick="showSection('latest')">Latest Image</div>
+                    <div class="nav-item" onclick="showSection('gallery')">Gallery</div>
+                    <div class="nav-item" onclick="showSection('settings')">Settings</div>
+                    <div class="nav-item" onclick="showSection('services')">Services</div>
+                </nav>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto">
+            <div class="max-w-6xl mx-auto p-8">
+                <!-- Latest Image Section -->
+                <section id="latest-section" class="section active">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-semibold mb-2">Latest Capture</h2>
+                        <p style="color: var(--text-secondary)">Real-time view of your aquarium</p>
                     </div>
-                </div>
-                
-                <!-- Controls -->
-                <div class="card-actions justify-center mt-6 gap-3 flex-wrap">
-                    <button onclick="refreshImage()" class="btn btn-primary gap-2">
-                        <i class="fas fa-sync-alt"></i>
-                        Refresh Now
-                    </button>
                     
-                    <button id="auto-refresh-btn" onclick="toggleAutoRefresh()" class="btn btn-success gap-2">
-                        <i class="fas fa-play"></i>
-                        <span id="auto-refresh-text">Auto-Refresh (30s)</span>
-                    </button>
-                    
-                    <button onclick="window.open('/latest.jpg', '_blank')" class="btn btn-accent gap-2">
-                        <i class="fas fa-download"></i>
-                        Download
-                    </button>
-                    
-                    <a href="/gallery" class="btn btn-info gap-2">
-                        <i class="fas fa-images"></i>
-                        View Gallery
-                    </a>
-                </div>
-                
-                <!-- Keyboard Shortcuts Help -->
-                <div class="alert glass-effect mt-4">
-                    <i class="fas fa-keyboard"></i>
-                    <div>
-                        <div class="text-sm text-white/70">
-                            <kbd class="kbd kbd-sm">R</kbd> Refresh • 
-                            <kbd class="kbd kbd-sm">Space</kbd> Toggle Auto-refresh •
-                            <kbd class="kbd kbd-sm">G</kbd> Gallery
+                    <!-- Stats -->
+                    <div class="grid grid-cols-4 gap-4 mb-6">
+                        <div class="card p-4 rounded-lg">
+                            <div style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">Total Images</div>
+                            <div class="text-2xl font-semibold">{{ stats.total_images }}</div>
+                        </div>
+                        <div class="card p-4 rounded-lg">
+                            <div style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">Today</div>
+                            <div class="text-2xl font-semibold">{{ stats.today_images }}</div>
+                        </div>
+                        <div class="card p-4 rounded-lg">
+                            <div style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">Storage</div>
+                            <div class="text-2xl font-semibold">{{ stats.disk_usage_gb }} GB</div>
+                        </div>
+                        <div class="card p-4 rounded-lg">
+                            <div style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">Last Capture</div>
+                            {% if stats.latest_time %}
+                            <div class="text-2xl font-semibold">{{ stats.latest_time.strftime('%H:%M') }}</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">{{ stats.latest_time.strftime('%b %d') }}</div>
+                            {% else %}
+                            <div class="text-2xl font-semibold">--:--</div>
+                            {% endif %}
                         </div>
                     </div>
-                </div>
+                    
+                    {% if has_image %}
+                    <!-- Image -->
+                    <div class="card p-4 rounded-lg mb-4">
+                        <img id="latest-image" 
+                             src="/latest.jpg?t={{ stats.latest_time.timestamp() if stats.latest_time else 0 }}" 
+                             alt="Latest aquarium photo"
+                             class="w-full rounded-lg"
+                             style="max-height: 70vh; object-fit: contain;">
+                    </div>
+                    
+                    <!-- Controls -->
+                    <div class="flex gap-3">
+                        <button onclick="refreshImage()" class="btn px-4 py-2 rounded-lg">Refresh</button>
+                        <button id="auto-refresh-btn" onclick="toggleAutoRefresh()" class="btn px-4 py-2 rounded-lg">
+                            <span id="auto-refresh-text">Auto-Refresh (30s)</span>
+                        </button>
+                        <button onclick="window.open('/latest.jpg', '_blank')" class="btn px-4 py-2 rounded-lg">Download</button>
+                    </div>
+                    {% else %}
+                    <div class="card p-12 rounded-lg text-center">
+                        <div style="color: var(--text-secondary); font-size: 14px;">No images captured yet</div>
+                    </div>
+                    {% endif %}
+                </section>
+                
+                <!-- Gallery Section -->
+                <section id="gallery-section" class="section">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-semibold mb-2">Gallery</h2>
+                        <p style="color: var(--text-secondary)">Browse recent captures</p>
+                    </div>
+                    <div id="gallery-grid" class="grid grid-cols-3 gap-4">
+                        <div style="color: var(--text-secondary)">Loading...</div>
+                    </div>
+                </section>
+                
+                <!-- Settings Section -->
+                <section id="settings-section" class="section">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-semibold mb-2">Settings</h2>
+                        <p style="color: var(--text-secondary)">Configure capture parameters</p>
+                    </div>
+                    
+                    <div class="card p-6 rounded-lg">
+                        <div id="config-editor">
+                            <div style="color: var(--text-secondary); margin-bottom: 12px;">Edit configuration (JSON format)</div>
+                            <textarea id="config-json" 
+                                      class="w-full h-96 p-4 rounded-lg font-mono text-sm"
+                                      style="resize: vertical;">Loading...</textarea>
+                            <div class="flex gap-3 mt-4">
+                                <button onclick="saveConfig()" class="btn-primary px-4 py-2 rounded-lg">Save Configuration</button>
+                                <button onclick="loadConfig()" class="btn px-4 py-2 rounded-lg">Reload</button>
+                            </div>
+                            <div id="config-message" class="mt-3" style="font-size: 14px;"></div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Services Section -->
+                <section id="services-section" class="section">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-semibold mb-2">Services</h2>
+                        <p style="color: var(--text-secondary)">Control system services</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <!-- Capture Service -->
+                        <div class="card p-6 rounded-lg">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <div class="font-semibold mb-1">Capture Service</div>
+                                    <div style="color: var(--text-secondary); font-size: 13px;">Main timelapse capture process</div>
+                                </div>
+                                <div id="capture-status" class="status-pill status-inactive">
+                                    <span class="status-dot"></span>
+                                    <span>Unknown</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="controlService('start', 'timelapse.service')" class="btn px-3 py-1.5 rounded text-sm">Start</button>
+                                <button onclick="controlService('stop', 'timelapse.service')" class="btn px-3 py-1.5 rounded text-sm">Stop</button>
+                                <button onclick="controlService('restart', 'timelapse.service')" class="btn px-3 py-1.5 rounded text-sm">Restart</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Sync Timer -->
+                        <div class="card p-6 rounded-lg">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <div class="font-semibold mb-1">Sync Timer</div>
+                                    <div style="color: var(--text-secondary); font-size: 13px;">Google Drive sync (every 6 hours)</div>
+                                </div>
+                                <div id="sync-status" class="status-pill status-inactive">
+                                    <span class="status-dot"></span>
+                                    <span>Unknown</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="controlService('start', 'timelapse-sync.timer')" class="btn px-3 py-1.5 rounded text-sm">Start</button>
+                                <button onclick="controlService('stop', 'timelapse-sync.timer')" class="btn px-3 py-1.5 rounded text-sm">Stop</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Cleanup Timer -->
+                        <div class="card p-6 rounded-lg">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <div class="font-semibold mb-1">Cleanup Timer</div>
+                                    <div style="color: var(--text-secondary); font-size: 13px;">Local cleanup (daily at 3am)</div>
+                                </div>
+                                <div id="cleanup-status" class="status-pill status-inactive">
+                                    <span class="status-dot"></span>
+                                    <span>Unknown</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="controlService('start', 'timelapse-cleanup.timer')" class="btn px-3 py-1.5 rounded text-sm">Start</button>
+                                <button onclick="controlService('stop', 'timelapse-cleanup.timer')" class="btn px-3 py-1.5 rounded text-sm">Stop</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Health Status -->
+                        <div class="card p-6 rounded-lg">
+                            <div class="font-semibold mb-4">System Health</div>
+                            <div id="health-info" style="color: var(--text-secondary); font-size: 14px;">Loading...</div>
+                        </div>
+                    </div>
+                </section>
             </div>
-        </div>
-        {% else %}
-        <!-- No Images State -->
-        <div class="card glass-effect shadow-2xl animate-fade-in">
-            <div class="card-body items-center text-center">
-                <i class="fas fa-camera text-6xl text-white/30 mb-4"></i>
-                <h2 class="card-title text-white text-2xl">No Images Yet</h2>
-                <p class="text-white/70">The timelapse system hasn't captured any photos yet.</p>
-                <p class="text-white/50 text-sm mt-2">Please wait for the first capture...</p>
-                <div class="card-actions mt-4">
-                    <button onclick="location.reload()" class="btn btn-primary">
-                        <i class="fas fa-redo"></i>
-                        Refresh Page
-                    </button>
-                </div>
-            </div>
-        </div>
-        {% endif %}
+        </main>
     </div>
-
+    
     <script>
         let autoRefreshInterval = null;
         let isAutoRefresh = false;
         
+        function showSection(name) {
+            // Update nav
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(name + '-section').classList.add('active');
+            
+            // Load section data
+            if (name === 'gallery') loadGallery();
+            if (name === 'settings') loadConfig();
+            if (name === 'services') loadServices();
+        }
+        
         function refreshImage() {
             const img = document.getElementById('latest-image');
-            const overlay = document.getElementById('loading-overlay');
-            
-            if (img && overlay) {
-                overlay.classList.remove('hidden');
+            if (img) {
                 const timestamp = new Date().getTime();
                 img.src = '/latest.jpg?t=' + timestamp;
-                
-                img.onload = function() {
-                    overlay.classList.add('hidden');
-                    updateStats();
-                };
-            } else {
-                location.reload();
             }
         }
         
         function toggleAutoRefresh() {
             const btn = document.getElementById('auto-refresh-btn');
             const text = document.getElementById('auto-refresh-text');
-            const icon = btn.querySelector('i');
             
             if (isAutoRefresh) {
                 clearInterval(autoRefreshInterval);
                 autoRefreshInterval = null;
                 isAutoRefresh = false;
-                btn.classList.remove('btn-error');
-                btn.classList.add('btn-success');
-                icon.classList.remove('fa-pause');
-                icon.classList.add('fa-play');
+                btn.classList.remove('btn-primary');
                 text.textContent = 'Auto-Refresh (30s)';
             } else {
                 autoRefreshInterval = setInterval(refreshImage, 30000);
                 isAutoRefresh = true;
-                btn.classList.remove('btn-success');
-                btn.classList.add('btn-error');
-                icon.classList.remove('fa-play');
-                icon.classList.add('fa-pause');
+                btn.classList.add('btn-primary');
                 text.textContent = 'Stop Auto-Refresh';
                 refreshImage();
             }
         }
         
-        function updateStats() {
-            // Could fetch updated stats via API here
-            fetch('/api/stats')
-                .then(r => r.json())
-                .then(data => {
-                    // Update stats if needed
-                    console.log('Stats updated', data);
+        async function loadGallery() {
+            // Placeholder - would fetch from API
+            document.getElementById('gallery-grid').innerHTML = '<div style="color: var(--text-secondary)">Gallery loading not yet implemented</div>';
+        }
+        
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('config-json').value = JSON.stringify(data.config, null, 2);
+                }
+            } catch (e) {
+                document.getElementById('config-json').value = 'Error loading config: ' + e.message;
+            }
+        }
+        
+        async function saveConfig() {
+            const msgEl = document.getElementById('config-message');
+            try {
+                const configText = document.getElementById('config-json').value;
+                const config = JSON.parse(configText);
+                
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config)
                 });
+                
+                const data = await response.json();
+                if (data.success) {
+                    msgEl.style.color = '#10b981';
+                    msgEl.textContent = '✓ Configuration saved successfully';
+                } else {
+                    msgEl.style.color = '#ef4444';
+                    msgEl.textContent = '✗ Error: ' + data.error;
+                }
+            } catch (e) {
+                msgEl.style.color = '#ef4444';
+                msgEl.textContent = '✗ Error: ' + e.message;
+            }
         }
         
-        function toggleTheme() {
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
+        async function loadServices() {
+            try {
+                const response = await fetch('/api/service/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateServiceStatus('capture', data.services.capture);
+                    updateServiceStatus('sync', data.services.sync_timer);
+                    updateServiceStatus('cleanup', data.services.cleanup_timer);
+                }
+                
+                // Load health
+                const healthResp = await fetch('/api/health');
+                const healthData = await healthResp.json();
+                if (healthData.success) {
+                    const h = healthData.health;
+                    let html = `
+                        <div>Disk: ${h.disk_free_gb} GB free / ${h.disk_total_gb} GB total (${h.disk_usage_percent}% used)</div>
+                        <div>Last sync: ${h.last_sync || 'Unknown'}</div>
+                    `;
+                    if (h.warnings.length > 0) {
+                        html += '<div style="color: #ef4444; margin-top: 8px;">' + h.warnings.join(', ') + '</div>';
+                    }
+                    document.getElementById('health-info').innerHTML = html;
+                }
+            } catch (e) {
+                console.error('Error loading services:', e);
+            }
         }
         
-        // Load saved theme
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        document.documentElement.setAttribute('data-theme', savedTheme);
+        function updateServiceStatus(name, status) {
+            const el = document.getElementById(name + '-status');
+            if (status.active) {
+                el.className = 'status-pill status-active';
+                el.querySelector('span:last-child').textContent = 'Active';
+            } else {
+                el.className = 'status-pill status-inactive';
+                el.querySelector('span:last-child').textContent = 'Inactive';
+            }
+        }
+        
+        async function controlService(action, service) {
+            try {
+                const response = await fetch(`/api/service/${action}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({service})
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    loadServices();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
         
         // Keyboard shortcuts
         document.addEventListener('keydown', function(event) {
-            if (event.target.tagName === 'INPUT') return;
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return;
             
             if (event.key === 'r' || event.key === 'R') {
                 event.preventDefault();
@@ -284,9 +483,6 @@
             } else if (event.key === ' ') {
                 event.preventDefault();
                 toggleAutoRefresh();
-            } else if (event.key === 'g' || event.key === 'G') {
-                event.preventDefault();
-                window.location.href = '/gallery';
             }
         });
     </script>

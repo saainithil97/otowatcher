@@ -1,0 +1,15 @@
+[Unit]
+Description=Aquarium Timelapse Capture Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/saainithil97/projects/timelapse
+ExecStart=/usr/bin/python3 /home/saainithil97/projects/timelapse/capture.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

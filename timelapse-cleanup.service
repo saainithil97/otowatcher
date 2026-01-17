@@ -1,0 +1,10 @@
+[Unit]
+Description=Aquarium Timelapse Cleanup Service
+After=timelapse-sync.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/saainithil97/projects/timelapse
+ExecStart=/bin/bash /home/saainithil97/projects/timelapse/cleanup.sh
+StandardOutput=journal
+StandardError=journal

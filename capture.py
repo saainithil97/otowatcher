@@ -8,11 +8,11 @@ import json
 import time
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time as dt_time
 from pathlib import Path
 import logging
 from picamera2 import Picamera2
-from libcamera import Transform
+from libcamera import Transform, controls
 import signal
 
 # Global flag for graceful shutdown
@@ -110,6 +110,78 @@ def cleanup_old_images(base_path, keep_days):
     except Exception as e:
         logging.error(f"Error during cleanup: {e}")
 
+def is_within_capture_window(config):
+    """Check if current time is within the configured capture window"""
+    if not config.get('capture_window', {}).get('enabled', False):
+        return True
+    
+    try:
+        now = datetime.now().time()
+        start_str = config['capture_window']['start_time']
+        end_str = config['capture_window']['end_time']
+        
+        start_time = dt_time.fromisoformat(start_str)
+        end_time = dt_time.fromisoformat(end_str)
+        
+        # Handle overnight windows (e.g., 22:00 to 08:00)
+        if start_time <= end_time:
+            return start_time <= now <= end_time
+        else:
+            return now >= start_time or now <= end_time
+    except Exception as e:
+        logging.warning(f"Error checking capture window: {e}, defaulting to capture")
+        return True
+
+def apply_camera_settings(picam2, settings):
+    """Apply optimized camera settings for RGB LED aquarium lighting"""
+    try:
+        camera_controls = {}
+        
+        # Exposure compensation (reduce for bright lights)
+        if 'exposure_compensation' in settings:
+            camera_controls['ExposureValue'] = settings['exposure_compensation']
+        
+        # Auto White Balance mode
+        awb_mode = settings.get('awb_mode', 'auto').lower()
+        if awb_mode == 'auto':
+            camera_controls['AwbEnable'] = True
+        elif awb_mode == 'custom':
+            camera_controls['AwbEnable'] = False
+            camera_controls['ColourGains'] = (
+                settings.get('awb_gains_red', 1.5),
+                settings.get('awb_gains_blue', 1.8)
+            )
+        
+        # Metering mode for center-weighted exposure
+        metering = settings.get('metering_mode', 'CentreWeighted')
+        if metering == 'CentreWeighted':
+            camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.CentreWeighted
+        elif metering == 'Spot':
+            camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.Spot
+        
+        # Sharpness
+        if 'sharpness' in settings:
+            camera_controls['Sharpness'] = settings['sharpness']
+        
+        # Contrast
+        if 'contrast' in settings:
+            camera_controls['Contrast'] = settings['contrast']
+        
+        # Brightness
+        if 'brightness' in settings:
+            camera_controls['Brightness'] = settings['brightness']
+        
+        # Saturation
+        if 'saturation' in settings:
+            camera_controls['Saturation'] = settings['saturation']
+        
+        picam2.set_controls(camera_controls)
+        logging.info(f"Applied camera settings: {camera_controls}")
+        return True
+    except Exception as e:
+        logging.error(f"Failed to apply camera settings: {e}")
+        return False
+
 def capture_image(picam2, output_path, quality=90):
     """Capture a single image"""
     try:
@@ -162,6 +234,10 @@ def main():
         picam2.start()
         time.sleep(2)  # Let camera warm up and adjust
         
+        # Apply optimized camera settings for RGB LED aquarium
+        if 'camera_settings' in config:
+            apply_camera_settings(picam2, config['camera_settings'])
+        
         logging.info("Camera initialized successfully")
     except Exception as e:
         logging.error(f"Failed to initialize camera: {e}")
@@ -174,10 +250,15 @@ def main():
     
     try:
         while not shutdown_flag:
-            # Check if we should capture (lights on check)
-            should_capture = True
+            # Check if we're within capture window
+            within_window = is_within_capture_window(config)
+            should_capture = within_window
             
-            if config['lights_only_mode']:
+            if not within_window:
+                logging.debug("Skipping capture - outside capture window")
+                skip_count += 1
+            elif config['lights_only_mode']:
+                # Secondary check: lights on/off
                 lights_on = check_light_level(picam2, config['light_threshold'])
                 should_capture = lights_on
                 

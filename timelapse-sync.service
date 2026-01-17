@@ -1,0 +1,11 @@
+[Unit]
+Description=Aquarium Timelapse Sync to Google Drive
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/saainithil97/projects/timelapse
+ExecStart=/bin/bash /home/saainithil97/projects/timelapse/sync_to_drive.sh
+StandardOutput=journal
+StandardError=journal

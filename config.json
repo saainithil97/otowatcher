@@ -9,6 +9,22 @@
     "height": 2464
   },
   "storage_path": "/home/saainithil97/projects/timelapse/images",
-  "log_path": "/home/saainithil97/projects/timelapse/logs/timelapse.log"
+  "log_path": "/home/saainithil97/projects/timelapse/logs/timelapse.log",
+  "capture_window": {
+    "enabled": false,
+    "start_time": "10:00",
+    "end_time": "16:00"
+  },
+  "camera_settings": {
+    "exposure_compensation": -0.6,
+    "awb_mode": "auto",
+    "awb_gains_red": 1.5,
+    "awb_gains_blue": 1.8,
+    "metering_mode": "CentreWeighted",
+    "sharpness": 1.5,
+    "contrast": 1.2,
+    "brightness": 0.0,
+    "saturation": 1.0
+  }
 }
 
