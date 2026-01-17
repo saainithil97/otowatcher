@@ -250,20 +250,31 @@ def get_service_status():
 def control_service(action):
     """Control services (start/stop/restart)"""
     try:
-        service = request.json.get('service', 'timelapse.service')
+        # Get service name from request body
+        request_data = request.get_json(silent=True)
+        if not request_data:
+            return jsonify({"success": False, "error": "No request body provided"}), 400
+        
+        service = request_data.get('service', 'timelapse.service')
         
         # Validate action
         if action not in ['start', 'stop', 'restart']:
-            return jsonify({"success": False, "error": "Invalid action"}), 400
+            return jsonify({"success": False, "error": f"Invalid action: {action}"}), 400
         
         # Validate service name
         valid_services = ['timelapse.service', 'timelapse-sync.timer', 'timelapse-cleanup.timer']
         if service not in valid_services:
-            return jsonify({"success": False, "error": "Invalid service"}), 400
+            return jsonify({"success": False, "error": f"Invalid service: {service}. Valid: {valid_services}"}), 400
         
         # Execute systemctl command
         cmd = ['systemctl', '--user', action, service]
+        print(f"Executing: {' '.join(cmd)}")  # Debug logging
+        
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        
+        print(f"Return code: {result.returncode}")  # Debug logging
+        print(f"Stdout: {result.stdout}")  # Debug logging
+        print(f"Stderr: {result.stderr}")  # Debug logging
         
         if result.returncode == 0:
             return jsonify({
@@ -272,14 +283,32 @@ def control_service(action):
                 "status": get_systemctl_status(service)
             })
         else:
+            error_msg = result.stderr.strip() if result.stderr else result.stdout.strip()
+            if not error_msg:
+                error_msg = f"Command failed with return code {result.returncode}"
+            
             return jsonify({
                 "success": False, 
-                "error": result.stderr or "Command failed"
+                "error": error_msg,
+                "debug": {
+                    "command": ' '.join(cmd),
+                    "return_code": result.returncode,
+                    "stdout": result.stdout,
+                    "stderr": result.stderr
+                }
             }), 500
     except subprocess.TimeoutExpired:
-        return jsonify({"success": False, "error": "Command timed out"}), 500
+        return jsonify({
+            "success": False, 
+            "error": "Command timed out after 10 seconds"
+        }), 500
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        import traceback
+        return jsonify({
+            "success": False, 
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
 
 @app.route('/api/logs', methods=['GET'])
 def get_logs():
@@ -457,6 +486,18 @@ def start_stream():
         if stream_active:
             return jsonify({"success": False, "error": "Stream already active"}), 400
         
+        # Check if capture service is running
+        try:
+            capture_status = get_systemctl_status('timelapse.service')
+            if capture_status.get('active'):
+                return jsonify({
+                    "success": False, 
+                    "error": "Capture service is running. Stop it first to use the camera.",
+                    "suggestion": "Go to Services tab and click 'Stop' on Capture Service"
+                }), 409  # 409 Conflict
+        except:
+            pass  # If we can't check, proceed anyway
+        
         try:
             # Initialize camera for streaming (lower resolution for bandwidth)
             stream_camera = Picamera2()
@@ -474,8 +515,27 @@ def start_stream():
             stream_active = True
             return jsonify({"success": True, "message": "Stream started"})
         except Exception as e:
+            # Clean up on error
+            if stream_camera:
+                try:
+                    stream_camera.close()
+                except:
+                    pass
             stream_camera = None
-            return jsonify({"success": False, "error": str(e)}), 500
+            
+            error_msg = str(e)
+            suggestion = ""
+            
+            if "did not complete" in error_msg or "Camera is in use" in error_msg:
+                suggestion = "The camera is busy. Make sure the capture service is stopped (Services tab → Stop Capture Service)."
+            elif "No such file or directory" in error_msg:
+                suggestion = "Camera hardware not detected. Check camera connection."
+            
+            return jsonify({
+                "success": False, 
+                "error": error_msg,
+                "suggestion": suggestion
+            }), 500
 
 @app.route('/api/stream/stop', methods=['POST'])
 def stop_stream():
@@ -513,6 +573,48 @@ def video_feed():
     
     return Response(generate_frames(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/api/debug/systemctl', methods=['GET'])
+def debug_systemctl():
+    """Debug endpoint to test systemctl access"""
+    try:
+        results = {}
+        
+        # Test basic systemctl --user command
+        cmd = ['systemctl', '--user', '--version']
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+        results['systemctl_version'] = {
+            'returncode': result.returncode,
+            'stdout': result.stdout[:200],
+            'stderr': result.stderr[:200]
+        }
+        
+        # List user services
+        cmd = ['systemctl', '--user', 'list-units', '--type=service', '--all']
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+        results['list_services'] = {
+            'returncode': result.returncode,
+            'stdout': result.stdout[:500],
+            'has_timelapse': 'timelapse.service' in result.stdout
+        }
+        
+        # Check specific service
+        cmd = ['systemctl', '--user', 'status', 'timelapse.service']
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+        results['timelapse_status'] = {
+            'returncode': result.returncode,
+            'stdout': result.stdout[:500],
+            'stderr': result.stderr[:200]
+        }
+        
+        return jsonify({'success': True, 'results': results})
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'success': False, 
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)

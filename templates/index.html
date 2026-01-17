@@ -246,7 +246,13 @@
                         </div>
                         
                         <div class="mt-4 p-3 rounded-lg" style="background: var(--bg-tertiary); font-size: 13px;">
-                            <div style="color: var(--text-secondary);">⚠️ Note: Stop the capture service before starting the stream to avoid camera conflicts.</div>
+                            <div style="color: var(--text-secondary); margin-bottom: 8px;">⚠️ <strong>Important:</strong> The camera can only be used by one process at a time.</div>
+                            <div style="color: var(--text-secondary);">Before starting the stream:</div>
+                            <div style="color: var(--text-secondary); margin-left: 16px; margin-top: 4px;">
+                                1. Go to the Services tab<br>
+                                2. Click "Stop" on Capture Service<br>
+                                3. Return here and click "Start Stream"
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -551,24 +557,30 @@
         
         async function controlService(action, service) {
             try {
+                console.log('Controlling service:', action, service);
+                
                 const response = await fetch(`/api/service/${action}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({service})
                 });
                 
-                if (!response.ok) {
-                    throw new Error('HTTP ' + response.status);
-                }
-                
                 const data = await response.json();
+                console.log('Service control response:', data);
+                
                 if (data.success) {
                     // Wait a moment for service to change state
                     setTimeout(() => loadServices(), 500);
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    let errorMsg = 'Error: ' + (data.error || 'Unknown error');
+                    if (data.debug) {
+                        console.error('Debug info:', data.debug);
+                        errorMsg += '\n\nCheck browser console for debug info.';
+                    }
+                    alert(errorMsg);
                 }
             } catch (e) {
+                console.error('Exception:', e);
                 alert('Error: ' + e.message);
             }
         }
@@ -580,6 +592,11 @@
         });
         
         async function startStream() {
+            // Disable button during startup
+            const startBtn = document.getElementById('start-stream-btn');
+            startBtn.disabled = true;
+            startBtn.textContent = 'Starting...';
+            
             try {
                 const response = await fetch('/api/stream/start', {method: 'POST'});
                 const data = await response.json();
@@ -588,17 +605,25 @@
                     document.getElementById('stream-feed').src = '/video_feed?t=' + new Date().getTime();
                     document.getElementById('stream-feed').classList.remove('hidden');
                     document.getElementById('stream-placeholder').classList.add('hidden');
-                    document.getElementById('start-stream-btn').style.display = 'none';
+                    startBtn.style.display = 'none';
                     document.getElementById('stop-stream-btn').style.display = 'block';
                     
                     const pill = document.getElementById('stream-status-pill');
                     pill.className = 'status-pill status-active';
                     pill.querySelector('span:last-child').textContent = 'Active';
                 } else {
-                    alert('Error starting stream: ' + data.error);
+                    let errorMsg = 'Error: ' + data.error;
+                    if (data.suggestion) {
+                        errorMsg += '\n\n' + data.suggestion;
+                    }
+                    alert(errorMsg);
+                    startBtn.disabled = false;
+                    startBtn.textContent = 'Start Stream';
                 }
             } catch (e) {
                 alert('Error: ' + e.message);
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Stream';
             }
         }
         
