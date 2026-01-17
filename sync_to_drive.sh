@@ -2,7 +2,7 @@
 
 # Configuration
 SOURCE_DIR="/home/saainithil97/projects/timelapse/images"
-DEST_DIR="otowatcher:otowatcher"
+DEST_DIR="drive:otowatcher"
 LOG_FILE="/home/saainithil97/projects/timelapse/logs/sync.log"
 
 # Create log directory if it doesn't exist
