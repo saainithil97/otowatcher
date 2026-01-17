@@ -146,6 +146,7 @@
                 
                 <nav class="space-y-1">
                     <div class="nav-item active" onclick="showSection('latest')">Latest Image</div>
+                    <div class="nav-item" onclick="showSection('live')">Live Stream</div>
                     <div class="nav-item" onclick="showSection('gallery')">Gallery</div>
                     <div class="nav-item" onclick="showSection('settings')">Settings</div>
                     <div class="nav-item" onclick="showSection('services')">Services</div>
@@ -211,6 +212,43 @@
                         <div style="color: var(--text-secondary); font-size: 14px;">No images captured yet</div>
                     </div>
                     {% endif %}
+                </section>
+                
+                <!-- Live Stream Section -->
+                <section id="live-section" class="section">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-semibold mb-2">Live Stream</h2>
+                        <p style="color: var(--text-secondary)">Real-time camera preview</p>
+                    </div>
+                    
+                    <div class="card p-6 rounded-lg mb-4">
+                        <div class="mb-4 flex items-center justify-between">
+                            <div>
+                                <div class="font-medium mb-1">Camera Stream</div>
+                                <div style="color: var(--text-secondary); font-size: 13px;">Preview what the camera sees (1280x960)</div>
+                            </div>
+                            <div id="stream-status-pill" class="status-pill status-inactive">
+                                <span class="status-dot"></span>
+                                <span>Inactive</span>
+                            </div>
+                        </div>
+                        
+                        <div id="stream-container" class="mb-4">
+                            <div id="stream-placeholder" class="bg-black rounded-lg flex items-center justify-center" style="height: 480px;">
+                                <div style="color: var(--text-secondary)">Stream not started</div>
+                            </div>
+                            <img id="stream-feed" src="" alt="Live stream" class="w-full rounded-lg hidden" style="max-height: 70vh; object-fit: contain;">
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button id="start-stream-btn" onclick="startStream()" class="btn-primary px-4 py-2 rounded-lg">Start Stream</button>
+                            <button id="stop-stream-btn" onclick="stopStream()" class="btn px-4 py-2 rounded-lg" style="display: none;">Stop Stream</button>
+                        </div>
+                        
+                        <div class="mt-4 p-3 rounded-lg" style="background: var(--bg-tertiary); font-size: 13px;">
+                            <div style="color: var(--text-secondary);">⚠️ Note: Stop the capture service before starting the stream to avoid camera conflicts.</div>
+                        </div>
+                    </div>
                 </section>
                 
                 <!-- Gallery Section -->
@@ -338,6 +376,7 @@
             document.getElementById(name + '-section').classList.add('active');
             
             // Load section data
+            if (name === 'live') checkStreamStatus();
             if (name === 'gallery') loadGallery();
             if (name === 'settings') loadConfig();
             if (name === 'services') loadServices();
@@ -371,18 +410,55 @@
         }
         
         async function loadGallery() {
-            // Placeholder - would fetch from API
-            document.getElementById('gallery-grid').innerHTML = '<div style="color: var(--text-secondary)">Gallery loading not yet implemented</div>';
+            try {
+                const response = await fetch('/api/gallery?count=20');
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                const data = await response.json();
+                
+                if (data.success && data.images.length > 0) {
+                    let html = '';
+                    for (const img of data.images) {
+                        html += `
+                            <div class="card rounded-lg overflow-hidden cursor-pointer" onclick="openImageModal('${img.path}', '${img.timestamp_display}', '${img.size_mb}')">
+                                <img src="/image/${img.path}" alt="${img.filename}" class="w-full aspect-video object-cover" loading="lazy">
+                                <div class="p-3">
+                                    <div class="font-medium text-sm">${img.time_only}</div>
+                                    <div style="color: var(--text-secondary); font-size: 12px;">${img.date_only}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    document.getElementById('gallery-grid').innerHTML = html;
+                } else {
+                    document.getElementById('gallery-grid').innerHTML = '<div class="col-span-3 text-center p-12" style="color: var(--text-secondary)">No images found</div>';
+                }
+            } catch (e) {
+                console.error('Error loading gallery:', e);
+                document.getElementById('gallery-grid').innerHTML = '<div class="col-span-3 text-center" style="color: var(--text-secondary)">Error loading gallery: ' + e.message + '</div>';
+            }
+        }
+        
+        function openImageModal(path, timestamp, size) {
+            // Simple modal - could be enhanced
+            window.open('/image/' + path, '_blank');
         }
         
         async function loadConfig() {
             try {
                 const response = await fetch('/api/config');
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
                 const data = await response.json();
                 if (data.success) {
                     document.getElementById('config-json').value = JSON.stringify(data.config, null, 2);
+                } else {
+                    document.getElementById('config-json').value = 'Error: ' + (data.error || 'Unknown error');
                 }
             } catch (e) {
+                console.error('Error loading config:', e);
                 document.getElementById('config-json').value = 'Error loading config: ' + e.message;
             }
         }
@@ -416,38 +492,57 @@
         async function loadServices() {
             try {
                 const response = await fetch('/api/service/status');
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
                 const data = await response.json();
                 
                 if (data.success) {
                     updateServiceStatus('capture', data.services.capture);
                     updateServiceStatus('sync', data.services.sync_timer);
                     updateServiceStatus('cleanup', data.services.cleanup_timer);
+                } else {
+                    console.error('Service status error:', data.error);
                 }
                 
                 // Load health
                 const healthResp = await fetch('/api/health');
+                if (!healthResp.ok) {
+                    throw new Error('HTTP ' + healthResp.status);
+                }
                 const healthData = await healthResp.json();
                 if (healthData.success) {
                     const h = healthData.health;
                     let html = `
-                        <div>Disk: ${h.disk_free_gb} GB free / ${h.disk_total_gb} GB total (${h.disk_usage_percent}% used)</div>
+                        <div style="margin-bottom: 8px;">Disk: ${h.disk_free_gb} GB free / ${h.disk_total_gb} GB total (${h.disk_usage_percent}% used)</div>
                         <div>Last sync: ${h.last_sync || 'Unknown'}</div>
                     `;
-                    if (h.warnings.length > 0) {
+                    if (h.warnings && h.warnings.length > 0) {
                         html += '<div style="color: #ef4444; margin-top: 8px;">' + h.warnings.join(', ') + '</div>';
                     }
                     document.getElementById('health-info').innerHTML = html;
+                } else {
+                    document.getElementById('health-info').innerHTML = '<div style="color: var(--text-secondary)">Error loading health: ' + (healthData.error || 'Unknown') + '</div>';
                 }
             } catch (e) {
                 console.error('Error loading services:', e);
+                document.getElementById('health-info').innerHTML = '<div style="color: var(--text-secondary)">Error: ' + e.message + '</div>';
             }
         }
         
         function updateServiceStatus(name, status) {
             const el = document.getElementById(name + '-status');
-            if (status.active) {
+            if (!el) {
+                console.warn('Status element not found:', name);
+                return;
+            }
+            
+            if (status && status.active) {
                 el.className = 'status-pill status-active';
                 el.querySelector('span:last-child').textContent = 'Active';
+            } else if (status && status.state === 'error') {
+                el.className = 'status-pill status-inactive';
+                el.querySelector('span:last-child').textContent = 'Error';
             } else {
                 el.className = 'status-pill status-inactive';
                 el.querySelector('span:last-child').textContent = 'Inactive';
@@ -462,14 +557,92 @@
                     body: JSON.stringify({service})
                 });
                 
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                
                 const data = await response.json();
                 if (data.success) {
-                    loadServices();
+                    // Wait a moment for service to change state
+                    setTimeout(() => loadServices(), 500);
                 } else {
-                    alert('Error: ' + data.error);
+                    alert('Error: ' + (data.error || 'Unknown error'));
                 }
             } catch (e) {
                 alert('Error: ' + e.message);
+            }
+        }
+        
+        // Load services status on page load
+        window.addEventListener('load', function() {
+            // Initial load of service status
+            loadServices();
+        });
+        
+        async function startStream() {
+            try {
+                const response = await fetch('/api/stream/start', {method: 'POST'});
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('stream-feed').src = '/video_feed?t=' + new Date().getTime();
+                    document.getElementById('stream-feed').classList.remove('hidden');
+                    document.getElementById('stream-placeholder').classList.add('hidden');
+                    document.getElementById('start-stream-btn').style.display = 'none';
+                    document.getElementById('stop-stream-btn').style.display = 'block';
+                    
+                    const pill = document.getElementById('stream-status-pill');
+                    pill.className = 'status-pill status-active';
+                    pill.querySelector('span:last-child').textContent = 'Active';
+                } else {
+                    alert('Error starting stream: ' + data.error);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        async function stopStream() {
+            try {
+                const response = await fetch('/api/stream/stop', {method: 'POST'});
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('stream-feed').src = '';
+                    document.getElementById('stream-feed').classList.add('hidden');
+                    document.getElementById('stream-placeholder').classList.remove('hidden');
+                    document.getElementById('start-stream-btn').style.display = 'block';
+                    document.getElementById('stop-stream-btn').style.display = 'none';
+                    
+                    const pill = document.getElementById('stream-status-pill');
+                    pill.className = 'status-pill status-inactive';
+                    pill.querySelector('span:last-child').textContent = 'Inactive';
+                } else {
+                    alert('Error stopping stream: ' + data.error);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        async function checkStreamStatus() {
+            try {
+                const response = await fetch('/api/stream/status');
+                const data = await response.json();
+                
+                if (data.success && data.active) {
+                    document.getElementById('stream-feed').src = '/video_feed?t=' + new Date().getTime();
+                    document.getElementById('stream-feed').classList.remove('hidden');
+                    document.getElementById('stream-placeholder').classList.add('hidden');
+                    document.getElementById('start-stream-btn').style.display = 'none';
+                    document.getElementById('stop-stream-btn').style.display = 'block';
+                    
+                    const pill = document.getElementById('stream-status-pill');
+                    pill.className = 'status-pill status-active';
+                    pill.querySelector('span:last-child').textContent = 'Active';
+                }
+            } catch (e) {
+                console.error('Error checking stream status:', e);
             }
         }
         

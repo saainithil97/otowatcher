@@ -9,6 +9,7 @@ mkdir -p ~/.config/systemd/user
 
 # Copy service files
 cp timelapse.service ~/.config/systemd/user/
+cp timelapse-viewer.service ~/.config/systemd/user/
 cp timelapse-sync.service ~/.config/systemd/user/
 cp timelapse-sync.timer ~/.config/systemd/user/
 cp timelapse-cleanup.service ~/.config/systemd/user/
@@ -26,6 +27,7 @@ loginctl enable-linger $USER
 # Enable and start services
 echo "Enabling services..."
 systemctl --user enable timelapse.service
+systemctl --user enable timelapse-viewer.service
 systemctl --user enable timelapse-sync.timer
 systemctl --user enable timelapse-cleanup.timer
 
@@ -34,12 +36,16 @@ echo "Installation complete!"
 echo ""
 echo "To start the services, run:"
 echo "  systemctl --user start timelapse.service"
+echo "  systemctl --user start timelapse-viewer.service"
 echo "  systemctl --user start timelapse-sync.timer"
 echo "  systemctl --user start timelapse-cleanup.timer"
 echo ""
 echo "To check status:"
 echo "  systemctl --user status timelapse.service"
+echo "  systemctl --user status timelapse-viewer.service"
 echo "  systemctl --user list-timers"
+echo ""
+echo "Web interface will be available at: http://your-pi-ip:5000"
 echo ""
 echo "Note: If you have old system services running, stop them with:"
 echo "  sudo systemctl stop timelapse timelapse-sync.timer timelapse-cleanup.timer"
