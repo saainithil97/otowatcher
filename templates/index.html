@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐠 Aquarium Timelapse</title>
+    
+    <!-- Tailwind CSS + DaisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.24/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    
+    <style>
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .image-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1rem;
+        }
+        
+        .image-container img {
+            transition: transform 0.3s ease;
+        }
+        
+        .image-container:hover img {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 min-h-screen">
+    <!-- Navbar -->
+    <div class="navbar glass-effect text-white mb-8 sticky top-0 z-50">
+        <div class="flex-1">
+            <a href="/" class="btn btn-ghost text-xl">
+                <i class="fas fa-fish"></i>
+                Aquarium Timelapse
+            </a>
+        </div>
+        <div class="flex-none gap-2">
+            <a href="/gallery" class="btn btn-ghost">
+                <i class="fas fa-images"></i>
+                Gallery
+            </a>
+            <div class="dropdown dropdown-end">
+                <label tabindex="0" class="btn btn-ghost btn-circle">
+                    <i class="fas fa-cog"></i>
+                </label>
+                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow glass-effect rounded-box w-52">
+                    <li><a onclick="toggleTheme()"><i class="fas fa-palette"></i> Toggle Theme</a></li>
+                    <li><a onclick="window.open('/latest.jpg', '_blank')"><i class="fas fa-download"></i> Download Latest</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 pb-8 max-w-7xl">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 animate-fade-in">
+            <!-- Total Images -->
+            <div class="stats shadow glass-effect">
+                <div class="stat">
+                    <div class="stat-figure text-primary">
+                        <i class="fas fa-images text-3xl"></i>
+                    </div>
+                    <div class="stat-title text-white/70">Total Images</div>
+                    <div class="stat-value text-primary">{{ stats.total_images }}</div>
+                    <div class="stat-desc text-white/50">All time</div>
+                </div>
+            </div>
+            
+            <!-- Today's Images -->
+            <div class="stats shadow glass-effect">
+                <div class="stat">
+                    <div class="stat-figure text-secondary">
+                        <i class="fas fa-calendar-day text-3xl"></i>
+                    </div>
+                    <div class="stat-title text-white/70">Today</div>
+                    <div class="stat-value text-secondary">{{ stats.today_images }}</div>
+                    <div class="stat-desc text-white/50">Captures</div>
+                </div>
+            </div>
+            
+            <!-- Storage -->
+            <div class="stats shadow glass-effect">
+                <div class="stat">
+                    <div class="stat-figure text-accent">
+                        <i class="fas fa-database text-3xl"></i>
+                    </div>
+                    <div class="stat-title text-white/70">Storage</div>
+                    <div class="stat-value text-accent">{{ stats.disk_usage_gb }}</div>
+                    <div class="stat-desc text-white/50">GB used</div>
+                </div>
+            </div>
+            
+            <!-- Last Capture -->
+            <div class="stats shadow glass-effect">
+                <div class="stat">
+                    <div class="stat-figure text-info">
+                        <i class="fas fa-clock text-3xl"></i>
+                    </div>
+                    <div class="stat-title text-white/70">Last Capture</div>
+                    {% if stats.latest_time %}
+                    <div class="stat-value text-info text-xl">{{ stats.latest_time.strftime('%H:%M') }}</div>
+                    <div class="stat-desc text-white/50">{{ stats.latest_time.strftime('%b %d') }}</div>
+                    {% else %}
+                    <div class="stat-value text-info text-xl">--:--</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if has_image %}
+        <!-- Main Image Card -->
+        <div class="card glass-effect shadow-2xl animate-fade-in">
+            <div class="card-body">
+                <h2 class="card-title text-white text-2xl mb-4">
+                    <i class="fas fa-camera"></i>
+                    Latest Capture
+                    <span class="badge badge-success badge-lg">LIVE</span>
+                </h2>
+                
+                <!-- Image Container -->
+                <div class="image-container bg-base-300 rounded-lg overflow-hidden">
+                    <img id="latest-image" 
+                         src="/latest.jpg?t={{ stats.latest_time.timestamp() if stats.latest_time else 0 }}" 
+                         alt="Latest aquarium photo"
+                         class="w-full h-auto"
+                         loading="lazy">
+                    
+                    <!-- Loading Overlay -->
+                    <div id="loading-overlay" class="hidden absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <span class="loading loading-spinner loading-lg text-primary"></span>
+                    </div>
+                </div>
+                
+                <!-- Controls -->
+                <div class="card-actions justify-center mt-6 gap-3 flex-wrap">
+                    <button onclick="refreshImage()" class="btn btn-primary gap-2">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh Now
+                    </button>
+                    
+                    <button id="auto-refresh-btn" onclick="toggleAutoRefresh()" class="btn btn-success gap-2">
+                        <i class="fas fa-play"></i>
+                        <span id="auto-refresh-text">Auto-Refresh (30s)</span>
+                    </button>
+                    
+                    <button onclick="window.open('/latest.jpg', '_blank')" class="btn btn-accent gap-2">
+                        <i class="fas fa-download"></i>
+                        Download
+                    </button>
+                    
+                    <a href="/gallery" class="btn btn-info gap-2">
+                        <i class="fas fa-images"></i>
+                        View Gallery
+                    </a>
+                </div>
+                
+                <!-- Keyboard Shortcuts Help -->
+                <div class="alert glass-effect mt-4">
+                    <i class="fas fa-keyboard"></i>
+                    <div>
+                        <div class="text-sm text-white/70">
+                            <kbd class="kbd kbd-sm">R</kbd> Refresh • 
+                            <kbd class="kbd kbd-sm">Space</kbd> Toggle Auto-refresh •
+                            <kbd class="kbd kbd-sm">G</kbd> Gallery
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- No Images State -->
+        <div class="card glass-effect shadow-2xl animate-fade-in">
+            <div class="card-body items-center text-center">
+                <i class="fas fa-camera text-6xl text-white/30 mb-4"></i>
+                <h2 class="card-title text-white text-2xl">No Images Yet</h2>
+                <p class="text-white/70">The timelapse system hasn't captured any photos yet.</p>
+                <p class="text-white/50 text-sm mt-2">Please wait for the first capture...</p>
+                <div class="card-actions mt-4">
+                    <button onclick="location.reload()" class="btn btn-primary">
+                        <i class="fas fa-redo"></i>
+                        Refresh Page
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        let autoRefreshInterval = null;
+        let isAutoRefresh = false;
+        
+        function refreshImage() {
+            const img = document.getElementById('latest-image');
+            const overlay = document.getElementById('loading-overlay');
+            
+            if (img && overlay) {
+                overlay.classList.remove('hidden');
+                const timestamp = new Date().getTime();
+                img.src = '/latest.jpg?t=' + timestamp;
+                
+                img.onload = function() {
+                    overlay.classList.add('hidden');
+                    updateStats();
+                };
+            } else {
+                location.reload();
+            }
+        }
+        
+        function toggleAutoRefresh() {
+            const btn = document.getElementById('auto-refresh-btn');
+            const text = document.getElementById('auto-refresh-text');
+            const icon = btn.querySelector('i');
+            
+            if (isAutoRefresh) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                isAutoRefresh = false;
+                btn.classList.remove('btn-error');
+                btn.classList.add('btn-success');
+                icon.classList.remove('fa-pause');
+                icon.classList.add('fa-play');
+                text.textContent = 'Auto-Refresh (30s)';
+            } else {
+                autoRefreshInterval = setInterval(refreshImage, 30000);
+                isAutoRefresh = true;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-error');
+                icon.classList.remove('fa-play');
+                icon.classList.add('fa-pause');
+                text.textContent = 'Stop Auto-Refresh';
+                refreshImage();
+            }
+        }
+        
+        function updateStats() {
+            // Could fetch updated stats via API here
+            fetch('/api/stats')
+                .then(r => r.json())
+                .then(data => {
+                    // Update stats if needed
+                    console.log('Stats updated', data);
+                });
+        }
+        
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+        
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            if (event.target.tagName === 'INPUT') return;
+            
+            if (event.key === 'r' || event.key === 'R') {
+                event.preventDefault();
+                refreshImage();
+            } else if (event.key === ' ') {
+                event.preventDefault();
+                toggleAutoRefresh();
+            } else if (event.key === 'g' || event.key === 'G') {
+                event.preventDefault();
+                window.location.href = '/gallery';
+            }
+        });
+    </script>
+</body>
+</html>
