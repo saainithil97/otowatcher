@@ -19,13 +19,15 @@
     <!-- Gallery Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {% for img in images %}
-        <div class="card rounded-lg overflow-hidden cursor-pointer" 
+        <div class="card bg-base-100 shadow-xl cursor-pointer hover:shadow-2xl transition-shadow"
              onclick="GalleryModal.open('{{ img.path }}', '{{ img.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}', '{{ img.size_mb }}')">
-            <img src="/image/{{ img.path }}" 
-                 alt="{{ img.filename }}"
-                 class="w-full aspect-video object-cover"
-                 loading="lazy">
-            {% comment %} <div class="p-3">
+            <figure>
+                <img src="/image/{{ img.path }}"
+                     alt="{{ img.filename }}"
+                     class="w-full aspect-video object-cover"
+                     loading="lazy">
+            </figure>
+            {% comment %} <div class="card-body p-3">
                 <div class="font-medium text-sm">{{ img.timestamp.strftime('%H:%M:%S') }}</div>
                 <div class="text-base-content/60 text-xs">{{ img.timestamp.strftime('%b %d, %Y') }}</div>
             </div> {% endcomment %}
@@ -33,28 +35,36 @@
         {% endfor %}
     </div>
     {% else %}
-    <div class="card p-12 rounded-lg text-center">
-        <div class="text-base-content/60">No images found</div>
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body items-center text-center">
+            <p class="text-base-content/60">No images found</p>
+        </div>
     </div>
     {% endif %}
 </div>
 
 <!-- Modal -->
-<div id="image-modal" class="modal" onclick="GalleryModal.close(event)">
-    <div class="modal-content p-6" onclick="event.stopPropagation()">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <div class="font-semibold" id="modal-title">Image Details</div>
-                <div class="text-base-content/60 text-xs" id="modal-info"></div>
-            </div>
-            <button onclick="GalleryModal.close()" class="btn btn-sm btn-ghost">✕</button>
+<dialog id="image-modal" class="modal">
+    <div class="modal-box max-w-5xl">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        </form>
+        <div class="mb-4">
+            <h3 class="font-bold text-lg" id="modal-title">Image Details</h3>
+            <p class="text-base-content/60 text-xs" id="modal-info"></p>
         </div>
         <img id="modal-image" src="" alt="Full size" class="w-full rounded-lg" style="max-height: 70vh; object-fit: contain;">
-        <div class="flex gap-2 mt-4 flex-wrap">
+        <div class="modal-action">
             <button onclick="GalleryModal.download()" class="btn btn-sm">Download</button>
+            <form method="dialog">
+                <button class="btn btn-sm">Close</button>
+            </form>
         </div>
     </div>
-</div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
 {% endblock %}
 
 {% block scripts %}
@@ -73,21 +83,12 @@
             title.textContent = timestamp;
             info.textContent = size + ' MB';
 
-            Modal.open('image-modal');
-        }
-
-        static close(event) {
-            if (!event || event.target.id === 'image-modal') {
-                Modal.close('image-modal');
-            }
+            modal.showModal();
         }
 
         static download() {
             window.open('/image/' + this.currentImagePath, '_blank');
         }
     }
-
-    // Keyboard shortcuts
-    KeyboardShortcuts.register('Escape', () => GalleryModal.close());
 </script>
 {% endblock %}

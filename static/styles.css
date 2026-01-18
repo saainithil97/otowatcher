@@ -79,25 +79,6 @@ main {
     padding-bottom: 6rem;
 }
 
-/* Cards */
-.card {
-    background-color: #ffffff;
-    border: 1px solid #d4d4d4;
-    border-radius: 0.5rem;
-    transition: transform 0.15s ease;
-}
-
-@media (prefers-color-scheme: dark) {
-    .card {
-        background-color: #3a3a3a;
-        border-color: #4a4a4a;
-    }
-}
-
-.card:hover {
-    transform: translateY(-2px);
-}
-
 /* Sections */
 .section {
     display: none;

@@ -13,24 +13,26 @@ class GalleryComponent {
 
             if (data.success && data.images.length > 0) {
                 container.innerHTML = data.images.map(img => `
-                    <div class="card rounded-lg overflow-hidden cursor-pointer" 
+                    <div class="card bg-base-100 shadow-xl cursor-pointer hover:shadow-2xl transition-shadow"
                          onclick="GalleryComponent.openImage('${img.path}', '${img.timestamp_display}', '${img.size_mb}')">
-                        <img src="/image/${img.path}" 
-                             alt="${img.filename}" 
-                             class="w-full aspect-video object-cover" 
-                             loading="lazy">
-                        <div class="p-3">
+                        <figure>
+                            <img src="/image/${img.path}"
+                                 alt="${img.filename}"
+                                 class="w-full aspect-video object-cover"
+                                 loading="lazy">
+                        </figure>
+                        <div class="card-body p-3">
                             <div class="font-medium text-sm">${img.time_only}</div>
-                            <div class="text-secondary" style="font-size: 12px;">${img.date_only}</div>
+                            <div class="text-base-content/60 text-xs">${img.date_only}</div>
                         </div>
                     </div>
                 `).join('');
             } else {
-                container.innerHTML = '<div class="col-span-full text-center p-12 text-secondary">No images found</div>';
+                container.innerHTML = '<div class="col-span-full text-center p-12 text-base-content/60">No images found</div>';
             }
         } catch (error) {
             console.error('Gallery load error:', error);
-            container.innerHTML = `<div class="col-span-full text-center text-secondary">Error: ${error.message}</div>`;
+            container.innerHTML = `<div class="col-span-full text-center text-base-content/60">Error: ${error.message}</div>`;
             Notifier.error('Failed to load gallery');
         }
     }
@@ -114,12 +116,17 @@ class ServiceComponent {
         if (!el) return;
 
         let html = `
-            <div style="margin-bottom: 8px;">Disk: ${health.disk_free_gb} GB free / ${health.disk_total_gb} GB total (${health.disk_usage_percent}% used)</div>
+            <div class="mb-2">Disk: ${health.disk_free_gb} GB free / ${health.disk_total_gb} GB total (${health.disk_usage_percent}% used)</div>
             <div>Last sync: ${health.last_sync || 'Unknown'}</div>
         `;
 
         if (health.warnings && health.warnings.length > 0) {
-            html += `<div class="notification error" style="margin-top: 8px;">${health.warnings.join(', ')}</div>`;
+            html += `
+                <div role="alert" class="alert alert-error mt-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>${health.warnings.join(', ')}</span>
+                </div>
+            `;
         }
 
         el.innerHTML = html;

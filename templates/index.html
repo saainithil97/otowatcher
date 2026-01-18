@@ -47,7 +47,7 @@
             <!-- Header with Title -->
             <div class="mb-8">
                 <h1 class="text-3xl font-bold mb-2">Aquarium Timelapse</h1>
-                <p class="text-gray-500">Real-time monitoring and capture</p>
+                <p class="text-base-content/60">Real-time monitoring and capture</p>
             </div>
 
             <!-- Latest Image Section -->
@@ -58,38 +58,40 @@
                 </div>
                 
                 <!-- Stats -->
-                <div class="grid grid-cols-4 gap-4 mb-6">
-                    <div class="card p-4 rounded-lg">
-                        <div class="text-base-content/60 text-sm mb-1">Total Images</div>
-                        <div class="text-2xl font-semibold">{{ stats.total_images }}</div>
+                <div class="stats stats-vertical lg:stats-horizontal shadow mb-6 w-full">
+                    <div class="stat">
+                        <div class="stat-title">Total Images</div>
+                        <div class="stat-value text-primary">{{ stats.total_images }}</div>
                     </div>
-                    <div class="card p-4 rounded-lg">
-                        <div class="text-base-content/60 text-sm mb-1">Today</div>
-                        <div class="text-2xl font-semibold">{{ stats.today_images }}</div>
+                    <div class="stat">
+                        <div class="stat-title">Today</div>
+                        <div class="stat-value text-primary">{{ stats.today_images }}</div>
                     </div>
-                    <div class="card p-4 rounded-lg">
-                        <div class="text-base-content/60 text-sm mb-1">Storage</div>
-                        <div class="text-2xl font-semibold">{{ stats.disk_usage_gb }} GB</div>
+                    <div class="stat">
+                        <div class="stat-title">Storage</div>
+                        <div class="stat-value text-primary">{{ stats.disk_usage_gb }} GB</div>
                     </div>
-                    <div class="card p-4 rounded-lg">
-                        <div class="text-base-content/60 text-sm mb-1">Last Capture</div>
+                    <div class="stat">
+                        <div class="stat-title">Last Capture</div>
                         {% if stats.latest_time %}
-                        <div class="text-2xl font-semibold">{{ stats.latest_time.strftime('%H:%M') }}</div>
-                        <div class="text-base-content/60 text-xs">{{ stats.latest_time.strftime('%b %d') }}</div>
+                        <div class="stat-value text-primary">{{ stats.latest_time.strftime('%H:%M') }}</div>
+                        <div class="stat-desc">{{ stats.latest_time.strftime('%b %d') }}</div>
                         {% else %}
-                        <div class="text-2xl font-semibold">--:--</div>
+                        <div class="stat-value text-primary">--:--</div>
                         {% endif %}
                     </div>
                 </div>
                 
                 {% if has_image %}
                 <!-- Image -->
-                <div class="card p-4 rounded-lg mb-4">
-                    <img id="latest-image" 
-                         src="/latest.jpg?t={{ stats.latest_time.timestamp() if stats.latest_time else 0 }}" 
-                         alt="Latest aquarium photo"
-                         class="w-full rounded-lg"
-                         style="max-height: 70vh; object-fit: contain;">
+                <div class="card bg-base-100 shadow-xl mb-4">
+                    <figure class="px-4 pt-4">
+                        <img id="latest-image"
+                             src="/latest.jpg?t={{ stats.latest_time.timestamp() if stats.latest_time else 0 }}"
+                             alt="Latest aquarium photo"
+                             class="rounded-lg"
+                             style="max-height: 70vh; object-fit: contain;">
+                    </figure>
                 </div>
                 
                 <!-- Controls -->
@@ -102,8 +104,10 @@
                     <button onclick="latestImage.download()" class="btn btn-sm">Download</button>
                 </div>
                 {% else %}
-                <div class="card p-12 rounded-lg text-center">
-                    <div class="text-base-content/60 text-sm">No images captured yet</div>
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body items-center text-center">
+                        <p class="text-base-content/60">No images captured yet</p>
+                    </div>
                 </div>
                 {% endif %}
             </section>
@@ -115,37 +119,40 @@
                     <p class="text-base-content/60">Real-time camera preview</p>
                 </div>
                 
-                <div class="card p-6 rounded-lg mb-4">
-                    <div class="mb-4 flex items-center justify-between">
-                        <div>
-                            <div class="font-medium mb-1">Camera Stream</div>
-                            <div class="text-base-content/60 text-sm">Preview what the camera sees (1280x960)</div>
+                <div class="card bg-base-100 shadow-xl mb-4">
+                    <div class="card-body">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="card-title">Camera Stream</h3>
+                                <p class="text-base-content/60 text-sm">Preview what the camera sees (1280x960)</p>
+                            </div>
+                            <div id="stream-status-pill" class="badge badge-lg badge-error">
+                                <span class="status-dot"></span>
+                                <span>Inactive</span>
+                            </div>
                         </div>
-                        <div id="stream-status-pill" class="badge badge-lg badge-error">
-                            <span class="status-dot"></span>
-                            <span>Inactive</span>
+
+                        <div id="stream-container" class="mb-4">
+                            <div id="stream-placeholder" class="bg-black rounded-lg flex items-center justify-center" style="height: 480px;">
+                                <div class="text-base-content/60">Stream not started</div>
+                            </div>
+                            <img id="stream-feed" src="" alt="Live stream" class="w-full rounded-lg hidden" style="max-height: 70vh; object-fit: contain;">
                         </div>
-                    </div>
-                    
-                    <div id="stream-container" class="mb-4">
-                        <div id="stream-placeholder" class="bg-black rounded-lg flex items-center justify-center" style="height: 480px;">
-                            <div class="text-base-content/60">Stream not started</div>
+
+                        <div class="card-actions">
+                            <button id="start-stream-btn" onclick="StreamComponent.start()" class="btn btn-primary btn-sm">Start Stream</button>
+                            <button id="stop-stream-btn" onclick="StreamComponent.stop()" class="btn btn-sm" style="display: none;">Stop Stream</button>
                         </div>
-                        <img id="stream-feed" src="" alt="Live stream" class="w-full rounded-lg hidden" style="max-height: 70vh; object-fit: contain;">
-                    </div>
-                    
-                    <div class="flex gap-3 flex-wrap">
-                        <button id="start-stream-btn" onclick="StreamComponent.start()" class="btn btn-primary btn-sm">Start Stream</button>
-                        <button id="stop-stream-btn" onclick="StreamComponent.stop()" class="btn btn-sm" style="display: none;">Stop Stream</button>
-                    </div>
-                    
-                    <div class="mt-4 p-3 rounded-lg bg-tertiary text-sm">
-                        <div class="text-base-content/60 mb-2">⚠️ <strong>Important:</strong> The camera can only be used by one process at a time.</div>
-                        <div class="text-base-content/60">Before starting the stream:</div>
-                        <div class="text-base-content/60 ml-4 mt-1">
-                            1. Go to the Services tab<br>
-                            2. Click "Stop" on Capture Service<br>
-                            3. Return here and click "Start Stream"
+
+                        <div role="alert" class="alert alert-warning mt-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                            <div>
+                                <div class="font-bold">Important: The camera can only be used by one process at a time.</div>
+                                <div class="text-sm">Before starting the stream:<br>
+                                1. Go to the Services tab<br>
+                                2. Click "Stop" on Capture Service<br>
+                                3. Return here and click "Start Stream"</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -169,13 +176,14 @@
                     <p class="text-base-content/60">Configure capture parameters</p>
                 </div>
                 
-                <div class="card p-6 rounded-lg">
-                    <div id="config-editor">
-                        <div class="text-base-content/60 mb-3">Edit configuration (JSON format)</div>
-                        <textarea id="config-json" 
-                                  class="w-full h-96 p-4 rounded-lg font-mono text-sm"
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <h3 class="card-title">Configuration Editor</h3>
+                        <p class="text-base-content/60 mb-3">Edit configuration (JSON format)</p>
+                        <textarea id="config-json"
+                                  class="textarea textarea-bordered w-full h-96 font-mono text-sm"
                                   style="resize: vertical;">Loading...</textarea>
-                        <div class="flex gap-3 mt-4 flex-wrap">
+                        <div class="card-actions mt-4">
                             <button onclick="ConfigComponent.save()" class="btn btn-primary btn-sm">Save Configuration</button>
                             <button onclick="ConfigComponent.reload()" class="btn btn-sm">Reload</button>
                         </div>
@@ -193,64 +201,72 @@
                 
                 <div class="space-y-4">
                     <!-- Capture Service -->
-                    <div class="card p-6 rounded-lg">
-                        <div class="flex items-center justify-between mb-4">
-                            <div>
-                                <div class="font-semibold mb-1">Capture Service</div>
-                                <div class="text-base-content/60 text-sm">Main timelapse capture process</div>
+                    <div class="card bg-base-100 shadow-xl">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="card-title">Capture Service</h3>
+                                    <p class="text-base-content/60 text-sm">Main timelapse capture process</p>
+                                </div>
+                                <div id="capture-status" class="badge badge-lg badge-error">
+                                    <span class="status-dot"></span>
+                                    <span>Unknown</span>
+                                </div>
                             </div>
-                            <div id="capture-status" class="badge badge-lg badge-error">
-                                <span class="status-dot"></span>
-                                <span>Unknown</span>
+                            <div class="card-actions">
+                                <button onclick="ServiceComponent.control('start', 'timelapse.service')" class="btn btn-xs">Start</button>
+                                <button onclick="ServiceComponent.control('stop', 'timelapse.service')" class="btn btn-xs">Stop</button>
+                                <button onclick="ServiceComponent.control('restart', 'timelapse.service')" class="btn btn-xs">Restart</button>
                             </div>
-                        </div>
-                        <div class="flex gap-2 flex-wrap">
-                            <button onclick="ServiceComponent.control('start', 'timelapse.service')" class="btn btn-xs">Start</button>
-                            <button onclick="ServiceComponent.control('stop', 'timelapse.service')" class="btn btn-xs">Stop</button>
-                            <button onclick="ServiceComponent.control('restart', 'timelapse.service')" class="btn btn-xs">Restart</button>
                         </div>
                     </div>
-                    
+
                     <!-- Sync Timer -->
-                    <div class="card p-6 rounded-lg">
-                        <div class="flex items-center justify-between mb-4">
-                            <div>
-                                <div class="font-semibold mb-1">Sync Timer</div>
-                                <div class="text-base-content/60 text-sm">Google Drive sync (every 6 hours)</div>
+                    <div class="card bg-base-100 shadow-xl">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="card-title">Sync Timer</h3>
+                                    <p class="text-base-content/60 text-sm">Google Drive sync (every 6 hours)</p>
+                                </div>
+                                <div id="sync-status" class="badge badge-lg badge-error">
+                                    <span class="status-dot"></span>
+                                    <span>Unknown</span>
+                                </div>
                             </div>
-                            <div id="sync-status" class="badge badge-lg badge-error">
-                                <span class="status-dot"></span>
-                                <span>Unknown</span>
+                            <div class="card-actions">
+                                <button onclick="ServiceComponent.control('start', 'timelapse-sync.timer')" class="btn btn-xs">Start</button>
+                                <button onclick="ServiceComponent.control('stop', 'timelapse-sync.timer')" class="btn btn-xs">Stop</button>
                             </div>
-                        </div>
-                        <div class="flex gap-2 flex-wrap">
-                            <button onclick="ServiceComponent.control('start', 'timelapse-sync.timer')" class="btn btn-xs">Start</button>
-                            <button onclick="ServiceComponent.control('stop', 'timelapse-sync.timer')" class="btn btn-xs">Stop</button>
                         </div>
                     </div>
-                    
+
                     <!-- Cleanup Timer -->
-                    <div class="card p-6 rounded-lg">
-                        <div class="flex items-center justify-between mb-4">
-                            <div>
-                                <div class="font-semibold mb-1">Cleanup Timer</div>
-                                <div class="text-base-content/60 text-sm">Local cleanup (daily at 3am)</div>
+                    <div class="card bg-base-100 shadow-xl">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="card-title">Cleanup Timer</h3>
+                                    <p class="text-base-content/60 text-sm">Local cleanup (daily at 3am)</p>
+                                </div>
+                                <div id="cleanup-status" class="badge badge-lg badge-error">
+                                    <span class="status-dot"></span>
+                                    <span>Unknown</span>
+                                </div>
                             </div>
-                            <div id="cleanup-status" class="badge badge-lg badge-error">
-                                <span class="status-dot"></span>
-                                <span>Unknown</span>
+                            <div class="card-actions">
+                                <button onclick="ServiceComponent.control('start', 'timelapse-cleanup.timer')" class="btn btn-xs">Start</button>
+                                <button onclick="ServiceComponent.control('stop', 'timelapse-cleanup.timer')" class="btn btn-xs">Stop</button>
                             </div>
-                        </div>
-                        <div class="flex gap-2 flex-wrap">
-                            <button onclick="ServiceComponent.control('start', 'timelapse-cleanup.timer')" class="btn btn-xs">Start</button>
-                            <button onclick="ServiceComponent.control('stop', 'timelapse-cleanup.timer')" class="btn btn-xs">Stop</button>
                         </div>
                     </div>
-                    
+
                     <!-- Health Status -->
-                    <div class="card p-6 rounded-lg">
-                        <div class="font-semibold mb-4">System Health</div>
-                        <div id="health-info" class="text-base-content/60 text-sm">Loading...</div>
+                    <div class="card bg-base-100 shadow-xl">
+                        <div class="card-body">
+                            <h3 class="card-title">System Health</h3>
+                            <div id="health-info" class="text-base-content/60 text-sm">Loading...</div>
+                        </div>
                     </div>
                 </div>
             </section>
