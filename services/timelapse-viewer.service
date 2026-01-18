@@ -1,11 +1,11 @@
 [Unit]
-Description=Aquarium Timelapse Web Viewer
+Description=Aquarium Timelapse Web Viewer (Gunicorn)
 After=network.target
 
 [Service]
 Type=simple
 WorkingDirectory=/home/saainithil97/projects/timelapse
-ExecStart=/usr/bin/python3 /home/saainithil97/projects/timelapse/viewer.py
+ExecStart=/usr/bin/gunicorn --workers 2 --bind 0.0.0.0:5000 --timeout 120 viewer:app
 Restart=always
 RestartSec=10
 StandardOutput=journal
