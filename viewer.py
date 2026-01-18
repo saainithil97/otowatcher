@@ -616,5 +616,148 @@ def debug_systemctl():
             'traceback': traceback.format_exc()
         }), 500
 
+@app.route('/api/capture', methods=['POST'])
+def capture_now():
+    """Capture an image immediately using config.json settings"""
+    if not HAS_CAMERA:
+        return jsonify({
+            "success": False, 
+            "error": "Camera not available on this system"
+        }), 500
+    
+    try:
+        # Check if capture service is running (can't use camera if it is)
+        try:
+            capture_status = get_systemctl_status('timelapse.service')
+            if capture_status.get('active'):
+                return jsonify({
+                    "success": False, 
+                    "error": "Capture service is running. Cannot capture while service is active.",
+                    "suggestion": "Stop the Capture Service first (Services tab → Stop)"
+                }), 409  # 409 Conflict
+        except:
+            pass  # If we can't check, proceed anyway
+        
+        # Load config
+        with open(CONFIG_PATH, 'r') as f:
+            config = json.load(f)
+        
+        # Get timestamp and create directory structure
+        now = datetime.now()
+        date_str = now.strftime("%Y-%m-%d")
+        time_str = now.strftime("%Y%m%d_%H%M%S")
+        
+        # Use storage_path from config or fall back to IMAGES_DIR
+        storage_path = config.get('storage_path', IMAGES_DIR)
+        date_dir = os.path.join(storage_path, date_str)
+        os.makedirs(date_dir, exist_ok=True)
+        
+        output_path = os.path.join(date_dir, f"{time_str}.jpg")
+        
+        # Initialize camera
+        picam2 = Picamera2()
+        
+        # Create configuration with resolution from config
+        resolution = config.get('resolution', '3280x2464')
+        if isinstance(resolution, str):
+            width, height = map(int, resolution.split('x'))
+        else:
+            width, height = resolution['width'], resolution['height']
+        
+        # Rotation: config has 'rotation': 90, but libcamera wants 270 for clockwise
+        # Apply inverse: if config says 90 (clockwise), use 270 in libcamera
+        config_rotation = config.get('rotation', 90)
+        libcamera_rotation = (360 - config_rotation) % 360
+        
+        capture_config = picam2.create_still_configuration(
+            main={"size": (width, height)},
+            transform=Transform(hflip=0, vflip=0, rotation=libcamera_rotation)
+        )
+        picam2.configure(capture_config)
+        picam2.start()
+        time.sleep(1)  # Let camera adjust
+        
+        # Apply camera settings from config
+        camera_settings = config.get('camera_settings', {})
+        camera_controls = {}
+        
+        if 'exposure_compensation' in camera_settings:
+            camera_controls['ExposureValue'] = camera_settings['exposure_compensation']
+        
+        awb_mode = camera_settings.get('awb_mode', 'auto').lower()
+        if awb_mode == 'auto':
+            camera_controls['AwbEnable'] = True
+        elif awb_mode == 'custom':
+            camera_controls['AwbEnable'] = False
+            camera_controls['ColourGains'] = (
+                camera_settings.get('awb_gains_red', 1.5),
+                camera_settings.get('awb_gains_blue', 1.8)
+            )
+        
+        metering = camera_settings.get('metering_mode', 'CentreWeighted')
+        if metering == 'CentreWeighted':
+            camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.CentreWeighted
+        elif metering == 'Spot':
+            camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.Spot
+        
+        if 'sharpness' in camera_settings:
+            camera_controls['Sharpness'] = camera_settings['sharpness']
+        if 'contrast' in camera_settings:
+            camera_controls['Contrast'] = camera_settings['contrast']
+        if 'brightness' in camera_settings:
+            camera_controls['Brightness'] = camera_settings['brightness']
+        if 'saturation' in camera_settings:
+            camera_controls['Saturation'] = camera_settings['saturation']
+        
+        if camera_controls:
+            picam2.set_controls(camera_controls)
+        
+        # Capture image
+        picam2.capture_file(output_path)
+        
+        # Clean up
+        picam2.stop()
+        picam2.close()
+        
+        # Get file info
+        file_size = os.path.getsize(output_path) / (1024 * 1024)  # MB
+        
+        return jsonify({
+            "success": True,
+            "message": "Image captured successfully",
+            "path": output_path,
+            "filename": f"{time_str}.jpg",
+            "date_folder": date_str,
+            "size_mb": round(file_size, 2),
+            "timestamp": now.isoformat()
+        })
+    
+    except Exception as e:
+        # Clean up camera on error
+        try:
+            if 'picam2' in locals():
+                picam2.stop()
+                picam2.close()
+        except:
+            pass
+        
+        error_msg = str(e)
+        suggestion = ""
+        
+        if "did not complete" in error_msg or "Camera is in use" in error_msg:
+            suggestion = "The camera is busy. Make sure the capture service is stopped (Services tab → Stop Capture Service)."
+        elif "No such file or directory" in error_msg or "Cannot open device" in error_msg:
+            suggestion = "Camera hardware not detected. Check camera connection."
+        elif "permission denied" in error_msg.lower():
+            suggestion = "Permission denied. Check camera permissions and run with appropriate privileges."
+        
+        import traceback
+        return jsonify({
+            "success": False,
+            "error": error_msg,
+            "suggestion": suggestion,
+            "traceback": traceback.format_exc() if app.debug else None
+        }), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)

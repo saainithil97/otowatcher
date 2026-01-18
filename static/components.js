@@ -255,6 +255,33 @@ class LatestImageComponent {
     download() {
         window.open('/latest.jpg', '_blank');
     }
+
+    async capture() {
+        const btn = document.getElementById('capture-btn');
+        const originalText = btn.textContent;
+        
+        try {
+            btn.disabled = true;
+            btn.textContent = 'Capturing...';
+            
+            const response = await API.post('/api/capture');
+            
+            if (response.success) {
+                Notifier.success(`✓ Image captured successfully (${response.size_mb} MB)`);
+                // Refresh the latest image
+                setTimeout(() => this.refresh(), 500);
+            } else {
+                const errorMsg = response.error || 'Failed to capture image';
+                const suggestion = response.suggestion ? `\n${response.suggestion}` : '';
+                Notifier.error(`✗ ${errorMsg}${suggestion}`);
+            }
+        } catch (error) {
+            Notifier.error(`✗ Error: ${error.message}`);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
 }
 
 // Export for global use
