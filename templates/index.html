@@ -83,6 +83,43 @@
                 </div>
                 
                 {% if has_image %}
+                <!-- Controls Menu -->
+                <ul class="menu menu-horizontal bg-base-200 rounded-box mb-4 p-2">
+                    <li>
+                        <button id="capture-btn" onclick="latestImage.capture()" class="btn btn-primary btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Capture Now
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="latestImage.refresh()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Refresh
+                        </button>
+                    </li>
+                    <li>
+                        <button id="auto-refresh-btn" onclick="latestImage.toggleAutoRefresh()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span id="auto-refresh-text">Auto-Refresh (30s)</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="latestImage.download()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Download
+                        </button>
+                    </li>
+                </ul>
+
                 <!-- Image -->
                 <div class="card bg-base-100 shadow-xl mb-4">
                     <figure class="px-4 pt-4">
@@ -92,16 +129,6 @@
                              class="rounded-lg"
                              style="max-height: 70vh; object-fit: contain;">
                     </figure>
-                </div>
-                
-                <!-- Controls -->
-                <div class="flex gap-3 flex-wrap">
-                    <button id="capture-btn" onclick="latestImage.capture()" class="btn btn-primary btn-sm">Capture Now</button>
-                    <button onclick="latestImage.refresh()" class="btn btn-sm">Refresh</button>
-                    <button id="auto-refresh-btn" onclick="latestImage.toggleAutoRefresh()" class="btn btn-sm">
-                        <span id="auto-refresh-text">Auto-Refresh (30s)</span>
-                    </button>
-                    <button onclick="latestImage.download()" class="btn btn-sm">Download</button>
                 </div>
                 {% else %}
                 <div class="card bg-base-100 shadow-xl">
