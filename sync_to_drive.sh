@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# Configuration
-SOURCE_DIR="/home/saainithil97/projects/timelapse/images"
+# Configuration - Get project directory from script location
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOURCE_DIR="$PROJECT_DIR/images"
 DEST_DIR="drive:otowatcher"
-LOG_FILE="/home/saainithil97/projects/timelapse/logs/sync.log"
+LOG_FILE="$PROJECT_DIR/logs/sync.log"
 
 # Create log directory if it doesn't exist
 mkdir -p "$(dirname "$LOG_FILE")"

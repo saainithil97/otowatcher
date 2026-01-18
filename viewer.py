@@ -25,15 +25,32 @@ try:
     from libcamera import Transform, controls
     HAS_CAMERA = True
 except ImportError:
-    HAS_CAMERA = False
+    # Use mock camera for testing on non-Raspberry Pi systems
+    try:
+        from mock_camera import MockPicamera2 as Picamera2, libcamera
+        Transform = libcamera.Transform
+        controls = libcamera.controls
+        HAS_CAMERA = True
+        print("Using mock camera for testing")
+    except ImportError:
+        HAS_CAMERA = False
 
 app = Flask(__name__)
 
 # Configuration
-IMAGES_DIR = "/home/saainithil97/projects/timelapse/images"
-CONFIG_PATH = "/home/saainithil97/projects/timelapse/config.json"
-LOG_PATH = "/home/saainithil97/projects/timelapse/logs/timelapse.log"
-SCHEMA_PATH = "/home/saainithil97/projects/timelapse/config_schema.json"
+import sys
+import platform
+
+# Use relative paths based on script location (works on any system)
+BASE_DIR = Path(__file__).parent
+IMAGES_DIR = str(BASE_DIR / "images")
+CONFIG_PATH = str(BASE_DIR / "config.json")
+LOG_PATH = str(BASE_DIR / "logs" / "timelapse.log")
+SCHEMA_PATH = str(BASE_DIR / "config_schema.json")
+
+# For development on macOS, use test_images instead
+if platform.system() == 'Darwin':  # macOS
+    IMAGES_DIR = str(BASE_DIR / "test_images")
 
 # Load schema
 CONFIG_SCHEMA = None

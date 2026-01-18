@@ -82,7 +82,8 @@ class StatusPill {
 
         if (!element) return;
 
-        element.className = `status-pill ${isActive ? 'status-active' : 'status-inactive'}`;
+        // Use daisyUI badge classes instead of custom status-pill classes
+        element.className = `badge badge-lg ${isActive ? 'badge-success' : 'badge-error'}`;
         const statusText = element.querySelector('span:last-child');
         if (statusText) {
             statusText.textContent = label || (isActive ? 'Active' : 'Inactive');
@@ -155,9 +156,9 @@ class SectionNav {
         if (section) {
             section.classList.add('active');
 
-            // Update nav active state
+            // Update dock active state (daisyUI uses dock-active)
             document.querySelectorAll('[data-section]').forEach(el => {
-                el.classList.toggle('active', el.dataset.section === sectionName);
+                el.classList.toggle('dock-active', el.dataset.section === sectionName);
             });
 
             // Load section data if callback exists

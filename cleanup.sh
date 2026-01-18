@@ -3,9 +3,10 @@
 # Aquarium Timelapse Cleanup Script
 # Removes local images older than specified days after they've been synced to Google Drive
 
-# Configuration
-IMAGES_DIR="/home/saainithil97/projects/timelapse/images"
-LOG_FILE="/home/saainithil97/projects/timelapse/logs/cleanup.log"
+# Configuration - Get project directory from script location
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+IMAGES_DIR="$PROJECT_DIR/images"
+LOG_FILE="$PROJECT_DIR/logs/cleanup.log"
 DAYS_TO_KEEP=7  # Keep images for this many days locally
 REMOTE_NAME="aquarium_drive:AquariumTimelapse"
 

@@ -9,9 +9,9 @@
         <div class="flex items-center justify-between mb-4">
             <div>
                 <h1 class="text-2xl font-semibold mb-2">Gallery</h1>
-                <p class="text-secondary">Recent captures from your aquarium</p>
+                <p class="text-base-content/60">Recent captures from your aquarium</p>
             </div>
-            <a href="/" class="btn px-4 py-2 rounded-lg">← Back to Home</a>
+            <a href="/" class="btn btn-sm">← Back to Home</a>
         </div>
     </div>
     
@@ -25,16 +25,16 @@
                  alt="{{ img.filename }}"
                  class="w-full aspect-video object-cover"
                  loading="lazy">
-            <div class="p-3">
+            {% comment %} <div class="p-3">
                 <div class="font-medium text-sm">{{ img.timestamp.strftime('%H:%M:%S') }}</div>
-                <div class="text-secondary text-xs">{{ img.timestamp.strftime('%b %d, %Y') }}</div>
-            </div>
+                <div class="text-base-content/60 text-xs">{{ img.timestamp.strftime('%b %d, %Y') }}</div>
+            </div> {% endcomment %}
         </div>
         {% endfor %}
     </div>
     {% else %}
     <div class="card p-12 rounded-lg text-center">
-        <div class="text-secondary">No images found</div>
+        <div class="text-base-content/60">No images found</div>
     </div>
     {% endif %}
 </div>
@@ -45,13 +45,13 @@
         <div class="flex items-center justify-between mb-4">
             <div>
                 <div class="font-semibold" id="modal-title">Image Details</div>
-                <div class="text-secondary text-xs" id="modal-info"></div>
+                <div class="text-base-content/60 text-xs" id="modal-info"></div>
             </div>
-            <button onclick="GalleryModal.close()" class="btn px-3 py-2 rounded-lg">✕</button>
+            <button onclick="GalleryModal.close()" class="btn btn-sm btn-ghost">✕</button>
         </div>
         <img id="modal-image" src="" alt="Full size" class="w-full rounded-lg" style="max-height: 70vh; object-fit: contain;">
-        <div class="flex gap-2 mt-4">
-            <button onclick="GalleryModal.download()" class="btn px-4 py-2 rounded-lg">Download</button>
+        <div class="flex gap-2 mt-4 flex-wrap">
+            <button onclick="GalleryModal.download()" class="btn btn-sm">Download</button>
         </div>
     </div>
 </div>

@@ -24,8 +24,12 @@ def signal_handler(sig, frame):
     shutdown_flag = True
     logging.info("Shutdown signal received, finishing current operation...")
 
-def load_config(config_path="/home/saainithil97/projects/timelapse/config.json"):
+def load_config(config_path=None):
     """Load configuration from JSON file"""
+    if config_path is None:
+        # Use script directory if not specified
+        config_path = os.path.join(os.path.dirname(__file__), "config.json")
+    
     try:
         with open(config_path, 'r') as f:
             return json.load(f)

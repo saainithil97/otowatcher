@@ -3,54 +3,79 @@
 {% block title %}Aquarium Timelapse - Home{% endblock %}
 
 {% block content %}
-<div class="flex h-screen">
-    <!-- Sidebar -->
-    <aside class="sidebar w-64 flex-shrink-0 overflow-y-auto">
-        <div class="p-6">
-            <h1 class="text-xl font-semibold mb-8">Aquarium Timelapse</h1>
-            
-            <nav class="space-y-1">
-                <div class="nav-item active" data-section="latest">Latest Image</div>
-                <div class="nav-item" data-section="live">Live Stream</div>
-                <div class="nav-item" data-section="gallery">Gallery</div>
-                <div class="nav-item" data-section="settings">Settings</div>
-                <div class="nav-item" data-section="services">Services</div>
-            </nav>
-        </div>
-    </aside>
-    
-    <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto">
-        <div class="max-w-6xl mx-auto p-8">
+<!-- Bottom Dock Navigation (daisyUI) -->
+<div class="dock dock-sm">
+    <button class="dock-item dock-active" data-section="latest" title="Latest Image">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <span class="dock-label">Latest</span>
+    </button>
+    <button class="dock-item" data-section="live" title="Live Stream">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        <span class="dock-label">Stream</span>
+    </button>
+    <button class="dock-item" data-section="gallery" title="Gallery">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
+        </svg>
+        <span class="dock-label">Gallery</span>
+    </button>
+    <button class="dock-item" data-section="settings" title="Settings">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span class="dock-label">Settings</span>
+    </button>
+    <button class="dock-item" data-section="services" title="Services">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        <span class="dock-label">Services</span>
+    </button>
+</div>
+
+<!-- Main Content -->
+<main class="overflow-y-auto">
+    <div class="max-w-6xl mx-auto p-8">
             <!-- Notification Container -->
             <div id="notification-container" class="fixed top-4 right-4 max-w-md z-40"></div>
+
+            <!-- Header with Title -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold mb-2">Aquarium Timelapse</h1>
+                <p class="text-gray-500">Real-time monitoring and capture</p>
+            </div>
 
             <!-- Latest Image Section -->
             <section id="latest-section" class="section active">
                 <div class="mb-6">
                     <h2 class="text-2xl font-semibold mb-2">Latest Capture</h2>
-                    <p class="text-secondary">Real-time view of your aquarium</p>
+                    <p class="text-base-content/60">Real-time view of your aquarium</p>
                 </div>
                 
                 <!-- Stats -->
                 <div class="grid grid-cols-4 gap-4 mb-6">
                     <div class="card p-4 rounded-lg">
-                        <div class="text-secondary text-sm mb-1">Total Images</div>
+                        <div class="text-base-content/60 text-sm mb-1">Total Images</div>
                         <div class="text-2xl font-semibold">{{ stats.total_images }}</div>
                     </div>
                     <div class="card p-4 rounded-lg">
-                        <div class="text-secondary text-sm mb-1">Today</div>
+                        <div class="text-base-content/60 text-sm mb-1">Today</div>
                         <div class="text-2xl font-semibold">{{ stats.today_images }}</div>
                     </div>
                     <div class="card p-4 rounded-lg">
-                        <div class="text-secondary text-sm mb-1">Storage</div>
+                        <div class="text-base-content/60 text-sm mb-1">Storage</div>
                         <div class="text-2xl font-semibold">{{ stats.disk_usage_gb }} GB</div>
                     </div>
                     <div class="card p-4 rounded-lg">
-                        <div class="text-secondary text-sm mb-1">Last Capture</div>
+                        <div class="text-base-content/60 text-sm mb-1">Last Capture</div>
                         {% if stats.latest_time %}
                         <div class="text-2xl font-semibold">{{ stats.latest_time.strftime('%H:%M') }}</div>
-                        <div class="text-secondary text-xs">{{ stats.latest_time.strftime('%b %d') }}</div>
+                        <div class="text-base-content/60 text-xs">{{ stats.latest_time.strftime('%b %d') }}</div>
                         {% else %}
                         <div class="text-2xl font-semibold">--:--</div>
                         {% endif %}
@@ -68,17 +93,17 @@
                 </div>
                 
                 <!-- Controls -->
-                <div class="flex gap-3">
-                    <button id="capture-btn" onclick="LatestImageComponent.capture()" class="btn-primary px-4 py-2 rounded-lg">Capture Now</button>
-                    <button onclick="latestImage.refresh()" class="btn px-4 py-2 rounded-lg">Refresh</button>
-                    <button id="auto-refresh-btn" onclick="latestImage.toggleAutoRefresh()" class="btn px-4 py-2 rounded-lg">
+                <div class="flex gap-3 flex-wrap">
+                    <button id="capture-btn" onclick="latestImage.capture()" class="btn btn-primary btn-sm">Capture Now</button>
+                    <button onclick="latestImage.refresh()" class="btn btn-sm">Refresh</button>
+                    <button id="auto-refresh-btn" onclick="latestImage.toggleAutoRefresh()" class="btn btn-sm">
                         <span id="auto-refresh-text">Auto-Refresh (30s)</span>
                     </button>
-                    <button onclick="latestImage.download()" class="btn px-4 py-2 rounded-lg">Download</button>
+                    <button onclick="latestImage.download()" class="btn btn-sm">Download</button>
                 </div>
                 {% else %}
                 <div class="card p-12 rounded-lg text-center">
-                    <div class="text-secondary text-sm">No images captured yet</div>
+                    <div class="text-base-content/60 text-sm">No images captured yet</div>
                 </div>
                 {% endif %}
             </section>
@@ -87,16 +112,16 @@
             <section id="live-section" class="section">
                 <div class="mb-6">
                     <h2 class="text-2xl font-semibold mb-2">Live Stream</h2>
-                    <p class="text-secondary">Real-time camera preview</p>
+                    <p class="text-base-content/60">Real-time camera preview</p>
                 </div>
                 
                 <div class="card p-6 rounded-lg mb-4">
                     <div class="mb-4 flex items-center justify-between">
                         <div>
                             <div class="font-medium mb-1">Camera Stream</div>
-                            <div class="text-secondary text-sm">Preview what the camera sees (1280x960)</div>
+                            <div class="text-base-content/60 text-sm">Preview what the camera sees (1280x960)</div>
                         </div>
-                        <div id="stream-status-pill" class="status-pill status-inactive">
+                        <div id="stream-status-pill" class="badge badge-lg badge-error">
                             <span class="status-dot"></span>
                             <span>Inactive</span>
                         </div>
@@ -104,20 +129,20 @@
                     
                     <div id="stream-container" class="mb-4">
                         <div id="stream-placeholder" class="bg-black rounded-lg flex items-center justify-center" style="height: 480px;">
-                            <div class="text-secondary">Stream not started</div>
+                            <div class="text-base-content/60">Stream not started</div>
                         </div>
                         <img id="stream-feed" src="" alt="Live stream" class="w-full rounded-lg hidden" style="max-height: 70vh; object-fit: contain;">
                     </div>
                     
-                    <div class="flex gap-3">
-                        <button id="start-stream-btn" onclick="StreamComponent.start()" class="btn-primary px-4 py-2 rounded-lg">Start Stream</button>
-                        <button id="stop-stream-btn" onclick="StreamComponent.stop()" class="btn px-4 py-2 rounded-lg" style="display: none;">Stop Stream</button>
+                    <div class="flex gap-3 flex-wrap">
+                        <button id="start-stream-btn" onclick="StreamComponent.start()" class="btn btn-primary btn-sm">Start Stream</button>
+                        <button id="stop-stream-btn" onclick="StreamComponent.stop()" class="btn btn-sm" style="display: none;">Stop Stream</button>
                     </div>
                     
                     <div class="mt-4 p-3 rounded-lg bg-tertiary text-sm">
-                        <div class="text-secondary mb-2">⚠️ <strong>Important:</strong> The camera can only be used by one process at a time.</div>
-                        <div class="text-secondary">Before starting the stream:</div>
-                        <div class="text-secondary ml-4 mt-1">
+                        <div class="text-base-content/60 mb-2">⚠️ <strong>Important:</strong> The camera can only be used by one process at a time.</div>
+                        <div class="text-base-content/60">Before starting the stream:</div>
+                        <div class="text-base-content/60 ml-4 mt-1">
                             1. Go to the Services tab<br>
                             2. Click "Stop" on Capture Service<br>
                             3. Return here and click "Start Stream"
@@ -130,10 +155,10 @@
             <section id="gallery-section" class="section">
                 <div class="mb-6">
                     <h2 class="text-2xl font-semibold mb-2">Gallery</h2>
-                    <p class="text-secondary">Browse recent captures</p>
+                    <p class="text-base-content/60">Browse recent captures</p>
                 </div>
                 <div id="gallery-grid" class="grid grid-cols-3 gap-4">
-                    <div class="text-secondary">Loading...</div>
+                    <div class="text-base-content/60">Loading...</div>
                 </div>
             </section>
             
@@ -141,18 +166,18 @@
             <section id="settings-section" class="section">
                 <div class="mb-6">
                     <h2 class="text-2xl font-semibold mb-2">Settings</h2>
-                    <p class="text-secondary">Configure capture parameters</p>
+                    <p class="text-base-content/60">Configure capture parameters</p>
                 </div>
                 
                 <div class="card p-6 rounded-lg">
                     <div id="config-editor">
-                        <div class="text-secondary mb-3">Edit configuration (JSON format)</div>
+                        <div class="text-base-content/60 mb-3">Edit configuration (JSON format)</div>
                         <textarea id="config-json" 
                                   class="w-full h-96 p-4 rounded-lg font-mono text-sm"
                                   style="resize: vertical;">Loading...</textarea>
-                        <div class="flex gap-3 mt-4">
-                            <button onclick="ConfigComponent.save()" class="btn-primary px-4 py-2 rounded-lg">Save Configuration</button>
-                            <button onclick="ConfigComponent.reload()" class="btn px-4 py-2 rounded-lg">Reload</button>
+                        <div class="flex gap-3 mt-4 flex-wrap">
+                            <button onclick="ConfigComponent.save()" class="btn btn-primary btn-sm">Save Configuration</button>
+                            <button onclick="ConfigComponent.reload()" class="btn btn-sm">Reload</button>
                         </div>
                         <div id="config-message" class="mt-3 text-sm"></div>
                     </div>
@@ -163,7 +188,7 @@
             <section id="services-section" class="section">
                 <div class="mb-6">
                     <h2 class="text-2xl font-semibold mb-2">Services</h2>
-                    <p class="text-secondary">Control system services</p>
+                    <p class="text-base-content/60">Control system services</p>
                 </div>
                 
                 <div class="space-y-4">
@@ -172,17 +197,17 @@
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <div class="font-semibold mb-1">Capture Service</div>
-                                <div class="text-secondary text-sm">Main timelapse capture process</div>
+                                <div class="text-base-content/60 text-sm">Main timelapse capture process</div>
                             </div>
-                            <div id="capture-status" class="status-pill status-inactive">
+                            <div id="capture-status" class="badge badge-lg badge-error">
                                 <span class="status-dot"></span>
                                 <span>Unknown</span>
                             </div>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="ServiceComponent.control('start', 'timelapse.service')" class="btn px-3 py-1.5 rounded text-sm">Start</button>
-                            <button onclick="ServiceComponent.control('stop', 'timelapse.service')" class="btn px-3 py-1.5 rounded text-sm">Stop</button>
-                            <button onclick="ServiceComponent.control('restart', 'timelapse.service')" class="btn px-3 py-1.5 rounded text-sm">Restart</button>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="ServiceComponent.control('start', 'timelapse.service')" class="btn btn-xs">Start</button>
+                            <button onclick="ServiceComponent.control('stop', 'timelapse.service')" class="btn btn-xs">Stop</button>
+                            <button onclick="ServiceComponent.control('restart', 'timelapse.service')" class="btn btn-xs">Restart</button>
                         </div>
                     </div>
                     
@@ -191,16 +216,16 @@
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <div class="font-semibold mb-1">Sync Timer</div>
-                                <div class="text-secondary text-sm">Google Drive sync (every 6 hours)</div>
+                                <div class="text-base-content/60 text-sm">Google Drive sync (every 6 hours)</div>
                             </div>
-                            <div id="sync-status" class="status-pill status-inactive">
+                            <div id="sync-status" class="badge badge-lg badge-error">
                                 <span class="status-dot"></span>
                                 <span>Unknown</span>
                             </div>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="ServiceComponent.control('start', 'timelapse-sync.timer')" class="btn px-3 py-1.5 rounded text-sm">Start</button>
-                            <button onclick="ServiceComponent.control('stop', 'timelapse-sync.timer')" class="btn px-3 py-1.5 rounded text-sm">Stop</button>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="ServiceComponent.control('start', 'timelapse-sync.timer')" class="btn btn-xs">Start</button>
+                            <button onclick="ServiceComponent.control('stop', 'timelapse-sync.timer')" class="btn btn-xs">Stop</button>
                         </div>
                     </div>
                     
@@ -209,29 +234,28 @@
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <div class="font-semibold mb-1">Cleanup Timer</div>
-                                <div class="text-secondary text-sm">Local cleanup (daily at 3am)</div>
+                                <div class="text-base-content/60 text-sm">Local cleanup (daily at 3am)</div>
                             </div>
-                            <div id="cleanup-status" class="status-pill status-inactive">
+                            <div id="cleanup-status" class="badge badge-lg badge-error">
                                 <span class="status-dot"></span>
                                 <span>Unknown</span>
                             </div>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="ServiceComponent.control('start', 'timelapse-cleanup.timer')" class="btn px-3 py-1.5 rounded text-sm">Start</button>
-                            <button onclick="ServiceComponent.control('stop', 'timelapse-cleanup.timer')" class="btn px-3 py-1.5 rounded text-sm">Stop</button>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="ServiceComponent.control('start', 'timelapse-cleanup.timer')" class="btn btn-xs">Start</button>
+                            <button onclick="ServiceComponent.control('stop', 'timelapse-cleanup.timer')" class="btn btn-xs">Stop</button>
                         </div>
                     </div>
                     
                     <!-- Health Status -->
                     <div class="card p-6 rounded-lg">
                         <div class="font-semibold mb-4">System Health</div>
-                        <div id="health-info" class="text-secondary text-sm">Loading...</div>
+                        <div id="health-info" class="text-base-content/60 text-sm">Loading...</div>
                     </div>
                 </div>
             </section>
         </div>
     </main>
-</div>
 {% endblock %}
 
 {% block scripts %}

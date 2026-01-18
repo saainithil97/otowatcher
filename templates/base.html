@@ -6,6 +6,7 @@
     <title>{% block title %}Aquarium Timelapse{% endblock %}</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.1/dist/full.min.css" rel="stylesheet" type="text/css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -14,8 +15,8 @@
 <body class="min-h-screen">
     {% block content %}{% endblock %}
     
-    <script src="{{ url_for('static', filename='components.js') }}"></script>
     <script src="{{ url_for('static', filename='utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='components.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
