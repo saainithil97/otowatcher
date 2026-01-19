@@ -293,3 +293,215 @@ class LatestImageComponent {
 
 // Export for global use
 const latestImage = new LatestImageComponent();
+
+// Calendar Component
+class CalendarComponent {
+    static currentMonth = new Date().getMonth();
+    static currentYear = new Date().getFullYear();
+    static daysWithImages = new Set();
+    static selectedDate = null;
+
+    static async load() {
+        const today = new Date();
+        this.currentMonth = today.getMonth();
+        this.currentYear = today.getFullYear();
+
+        await this.loadDaysWithImages();
+        this.renderCalendar();
+    }
+
+    static async loadDaysWithImages() {
+        try {
+            const data = await API.get(`/api/calendar/days?year=${this.currentYear}&month=${this.currentMonth + 1}`);
+            if (data.success) {
+                this.daysWithImages = new Set(data.days);
+            }
+        } catch (error) {
+            console.error('Failed to load calendar days:', error);
+            Notifier.error('Failed to load calendar data');
+        }
+    }
+
+    static renderCalendar() {
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+
+        document.getElementById('calendar-month-year').textContent =
+            `${monthNames[this.currentMonth]} ${this.currentYear}`;
+
+        const calendarGrid = document.getElementById('calendar-grid');
+
+        // Keep the header row
+        const headerRow = Array.from(calendarGrid.children).slice(0, 7);
+        calendarGrid.innerHTML = '';
+        headerRow.forEach(header => calendarGrid.appendChild(header));
+
+        const firstDay = new Date(this.currentYear, this.currentMonth, 1).getDay();
+        const daysInMonth = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
+
+        // Add empty cells for days before the 1st
+        for (let i = 0; i < firstDay; i++) {
+            const emptyCell = document.createElement('div');
+            calendarGrid.appendChild(emptyCell);
+        }
+
+        // Add day cells
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayCell = document.createElement('div');
+            const dateStr = `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const hasImages = this.daysWithImages.has(dateStr);
+
+            dayCell.className = `btn btn-sm ${hasImages ? 'btn-primary' : 'btn-ghost'} ${this.selectedDate === dateStr ? 'btn-active' : ''}`;
+            dayCell.textContent = day;
+
+            if (hasImages) {
+                dayCell.onclick = () => this.selectDate(dateStr);
+            } else {
+                dayCell.disabled = true;
+            }
+
+            calendarGrid.appendChild(dayCell);
+        }
+    }
+
+    static async selectDate(dateStr) {
+        this.selectedDate = dateStr;
+        this.renderCalendar();
+
+        document.getElementById('calendar-date-info').textContent = `Loading images for ${dateStr}...`;
+
+        try {
+            const data = await API.get(`/api/calendar/images?date=${dateStr}`);
+            if (data.success && data.images.length > 0) {
+                document.getElementById('calendar-date-info').textContent =
+                    `${data.images.length} images captured on ${dateStr}`;
+
+                const container = document.getElementById('calendar-images');
+                container.innerHTML = data.images.map(img => `
+                    <div class="card bg-base-100 shadow-xl cursor-pointer hover:shadow-2xl transition-shadow"
+                         onclick="window.open('/image/${img.path}', '_blank')">
+                        <figure>
+                            <img src="/image/${img.path}"
+                                 alt="${img.filename}"
+                                 class="w-full aspect-video object-cover"
+                                 loading="lazy">
+                        </figure>
+                        <div class="card-body p-3">
+                            <div class="font-medium text-sm">${img.time_only}</div>
+                            <div class="text-base-content/60 text-xs">${img.size_mb} MB</div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('calendar-date-info').textContent = `No images found for ${dateStr}`;
+                document.getElementById('calendar-images').innerHTML = '';
+            }
+        } catch (error) {
+            console.error('Failed to load images:', error);
+            Notifier.error('Failed to load images for selected date');
+        }
+    }
+
+    static async previousMonth() {
+        this.currentMonth--;
+        if (this.currentMonth < 0) {
+            this.currentMonth = 11;
+            this.currentYear--;
+        }
+        await this.loadDaysWithImages();
+        this.renderCalendar();
+    }
+
+    static async nextMonth() {
+        this.currentMonth++;
+        if (this.currentMonth > 11) {
+            this.currentMonth = 0;
+            this.currentYear++;
+        }
+        await this.loadDaysWithImages();
+        this.renderCalendar();
+    }
+}
+
+// Comparison Component
+class CompareComponent {
+    static mode = 'side-by-side';
+    static img1Data = null;
+    static img2Data = null;
+
+    static load() {
+        // Initialize slider functionality
+        const slider = document.getElementById('comparison-slider');
+        if (slider) {
+            slider.addEventListener('input', (e) => {
+                const percentage = e.target.value;
+                document.getElementById('slider-img2-container').style.width = percentage + '%';
+            });
+        }
+    }
+
+    static setMode(mode) {
+        this.mode = mode;
+
+        // Update button states
+        document.getElementById('mode-side-by-side').classList.toggle('btn-active', mode === 'side-by-side');
+        document.getElementById('mode-slider').classList.toggle('btn-active', mode === 'slider');
+
+        // Show/hide views
+        document.getElementById('side-by-side-view').classList.toggle('hidden', mode !== 'side-by-side');
+        document.getElementById('slider-view').classList.toggle('hidden', mode !== 'slider');
+
+        // If we have images loaded, update the display
+        if (this.img1Data && this.img2Data) {
+            this.displayImages();
+        }
+    }
+
+    static async quickCompare(daysAgo) {
+        try {
+            const data = await API.get(`/api/compare/quick?days_ago=${daysAgo}`);
+
+            if (data.success) {
+                this.img1Data = data.img1;
+                this.img2Data = data.img2;
+                this.displayImages();
+                Notifier.success(`Comparing with image from ${daysAgo} day${daysAgo > 1 ? 's' : ''} ago`);
+            } else {
+                Notifier.error(data.error || 'No comparison image found');
+            }
+        } catch (error) {
+            console.error('Comparison error:', error);
+            Notifier.error(`Failed to load comparison: ${error.message}`);
+        }
+    }
+
+    static displayImages() {
+        if (!this.img1Data || !this.img2Data) return;
+
+        if (this.mode === 'side-by-side') {
+            // Display in side-by-side mode
+            document.getElementById('compare-img1-container').innerHTML =
+                `<img src="/image/${this.img1Data.path}" alt="Latest" class="w-full rounded-lg">`;
+            document.getElementById('compare-img1-info').textContent =
+                `${this.img1Data.timestamp} (${this.img1Data.size_mb} MB)`;
+
+            document.getElementById('compare-img2-container').innerHTML =
+                `<img src="/image/${this.img2Data.path}" alt="Comparison" class="w-full rounded-lg">`;
+            document.getElementById('compare-img2-info').textContent =
+                `${this.img2Data.timestamp} (${this.img2Data.size_mb} MB)`;
+        } else {
+            // Display in slider mode
+            document.getElementById('slider-img1').src = `/image/${this.img1Data.path}`;
+            document.getElementById('slider-img2').src = `/image/${this.img2Data.path}`;
+
+            document.getElementById('slider-img1-info').textContent =
+                `${this.img1Data.timestamp} (${this.img1Data.size_mb} MB)`;
+            document.getElementById('slider-img2-info').textContent =
+                `${this.img2Data.timestamp} (${this.img2Data.size_mb} MB)`;
+
+            // Reset slider to 50%
+            document.getElementById('comparison-slider').value = 50;
+            document.getElementById('slider-img2-container').style.width = '50%';
+        }
+    }
+}

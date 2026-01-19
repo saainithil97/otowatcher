@@ -776,5 +776,198 @@ def capture_now():
             "traceback": traceback.format_exc() if app.debug else None
         }), 500
 
+# Calendar API endpoints
+@app.route('/api/calendar/days', methods=['GET'])
+def calendar_days():
+    """Get days in a month that have images"""
+    try:
+        year = int(request.args.get('year', datetime.now().year))
+        month = int(request.args.get('month', datetime.now().month))
+
+        # Get all date folders
+        days_with_images = []
+        if os.path.exists(IMAGES_DIR):
+            for folder in os.listdir(IMAGES_DIR):
+                try:
+                    # Parse folder name (YYYY-MM-DD format)
+                    folder_date = datetime.strptime(folder, '%Y-%m-%d')
+                    if folder_date.year == year and folder_date.month == month:
+                        folder_path = os.path.join(IMAGES_DIR, folder)
+                        # Check if folder has images
+                        if os.path.isdir(folder_path):
+                            images = [f for f in os.listdir(folder_path) if f.endswith('.jpg')]
+                            if images:
+                                days_with_images.append(folder)
+                except (ValueError, OSError):
+                    continue
+
+        return jsonify({
+            "success": True,
+            "days": sorted(days_with_images),
+            "year": year,
+            "month": month
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/calendar/images', methods=['GET'])
+def calendar_images():
+    """Get all images for a specific date"""
+    try:
+        date_str = request.args.get('date')  # Format: YYYY-MM-DD
+        if not date_str:
+            return jsonify({"success": False, "error": "Date parameter required"}), 400
+
+        folder_path = os.path.join(IMAGES_DIR, date_str)
+        if not os.path.exists(folder_path):
+            return jsonify({"success": True, "images": []})
+
+        images = []
+        for filename in sorted(os.listdir(folder_path)):
+            if filename.endswith('.jpg'):
+                file_path = os.path.join(folder_path, filename)
+                file_size = os.path.getsize(file_path) / (1024 * 1024)  # MB
+
+                # Parse timestamp from filename (YYYYMMdd_HHMMSS.jpg)
+                try:
+                    timestamp = datetime.strptime(filename[:-4], '%Y%m%d_%H%M%S')
+                    images.append({
+                        'filename': filename,
+                        'path': f"{date_str}/{filename}",
+                        'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                        'time_only': timestamp.strftime('%H:%M:%S'),
+                        'date_only': timestamp.strftime('%b %d, %Y'),
+                        'size_mb': round(file_size, 2)
+                    })
+                except (ValueError, OSError):
+                    continue
+
+        return jsonify({
+            "success": True,
+            "images": images,
+            "date": date_str,
+            "count": len(images)
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# Comparison API endpoints
+@app.route('/api/compare/quick', methods=['GET'])
+def compare_quick():
+    """Quick comparison - get latest image and image from N days ago"""
+    try:
+        days_ago = int(request.args.get('days_ago', 7))
+
+        # Get latest image
+        latest_img = get_latest_image_info()
+        if not latest_img:
+            return jsonify({"success": False, "error": "No latest image found"})
+
+        # Calculate target date
+        latest_date = datetime.fromisoformat(latest_img['timestamp'])
+        target_date = latest_date - timedelta(days=days_ago)
+        target_date_str = target_date.strftime('%Y-%m-%d')
+
+        # Find image from target date (closest to same time of day)
+        comparison_img = find_closest_image(target_date, latest_date.time())
+
+        if not comparison_img:
+            return jsonify({
+                "success": False,
+                "error": f"No images found from {days_ago} days ago"
+            })
+
+        return jsonify({
+            "success": True,
+            "img1": latest_img,
+            "img2": comparison_img,
+            "days_difference": days_ago
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+def get_latest_image_info():
+    """Get info about the latest image"""
+    try:
+        # Get all date folders sorted
+        date_folders = sorted([d for d in os.listdir(IMAGES_DIR)
+                              if os.path.isdir(os.path.join(IMAGES_DIR, d))], reverse=True)
+
+        for date_folder in date_folders:
+            folder_path = os.path.join(IMAGES_DIR, date_folder)
+            images = sorted([f for f in os.listdir(folder_path) if f.endswith('.jpg')], reverse=True)
+
+            if images:
+                latest_file = images[0]
+                file_path = os.path.join(folder_path, latest_file)
+                file_size = os.path.getsize(file_path) / (1024 * 1024)  # MB
+
+                timestamp = datetime.strptime(latest_file[:-4], '%Y%m%d_%H%M%S')
+                return {
+                    'filename': latest_file,
+                    'path': f"{date_folder}/{latest_file}",
+                    'timestamp': timestamp.isoformat(),
+                    'size_mb': round(file_size, 2)
+                }
+        return None
+    except Exception as e:
+        print(f"Error getting latest image: {e}")
+        return None
+
+def find_closest_image(target_date, target_time):
+    """Find image closest to target date and time"""
+    try:
+        target_date_str = target_date.strftime('%Y-%m-%d')
+        folder_path = os.path.join(IMAGES_DIR, target_date_str)
+
+        if not os.path.exists(folder_path):
+            # Try adjacent days if exact date doesn't exist
+            for offset in [-1, 1, -2, 2]:
+                alt_date = target_date + timedelta(days=offset)
+                alt_date_str = alt_date.strftime('%Y-%m-%d')
+                folder_path = os.path.join(IMAGES_DIR, alt_date_str)
+                if os.path.exists(folder_path):
+                    target_date_str = alt_date_str
+                    break
+            else:
+                return None
+
+        images = [f for f in os.listdir(folder_path) if f.endswith('.jpg')]
+        if not images:
+            return None
+
+        # Find image closest to target time
+        target_seconds = target_time.hour * 3600 + target_time.minute * 60 + target_time.second
+        closest_img = None
+        closest_diff = float('inf')
+
+        for img_file in images:
+            try:
+                img_time = datetime.strptime(img_file[:-4], '%Y%m%d_%H%M%S')
+                img_seconds = img_time.hour * 3600 + img_time.minute * 60 + img_time.second
+                diff = abs(img_seconds - target_seconds)
+
+                if diff < closest_diff:
+                    closest_diff = diff
+                    closest_img = img_file
+            except (ValueError, OSError):
+                continue
+
+        if closest_img:
+            file_path = os.path.join(folder_path, closest_img)
+            file_size = os.path.getsize(file_path) / (1024 * 1024)  # MB
+            timestamp = datetime.strptime(closest_img[:-4], '%Y%m%d_%H%M%S')
+
+            return {
+                'filename': closest_img,
+                'path': f"{target_date_str}/{closest_img}",
+                'timestamp': timestamp.isoformat(),
+                'size_mb': round(file_size, 2)
+            }
+        return None
+    except Exception as e:
+        print(f"Error finding closest image: {e}")
+        return None
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
