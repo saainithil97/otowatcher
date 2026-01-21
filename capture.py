@@ -192,10 +192,6 @@ def apply_camera_settings(picam2, settings):
         if 'saturation' in settings:
             camera_controls['Saturation'] = settings['saturation']
 
-        # HDR mode for Camera v3 (if enabled)
-        if settings.get('hdr_mode', False):
-            logging.info("HDR mode requested (requires picamera2 HDR support)")
-
         # Frame duration limits (for consistent exposure with aquarium lighting flicker)
         if 'frame_duration_limits' in settings:
             min_duration = settings['frame_duration_limits'].get('min_us')
@@ -250,12 +246,24 @@ def main():
     try:
         picam2 = Picamera2()
 
+        # Check if HDR mode is enabled (Camera Module v3 feature)
+        hdr_enabled = config.get('camera_settings', {}).get('hdr_mode', False)
+
         # Configure camera for Camera Module v3 (IMX708)
-        config_cam = picam2.create_still_configuration(
-            main={"size": (config['resolution']['width'],
-                          config['resolution']['height'])},
-            transform=Transform(hflip=0, vflip=0, rotation=270)  # Rotate 90 degrees
-        )
+        if hdr_enabled:
+            logging.info("HDR mode enabled")
+            config_cam = picam2.create_still_configuration(
+                main={"size": (config['resolution']['width'],
+                              config['resolution']['height'])},
+                transform=Transform(hflip=0, vflip=0, rotation=270),  # Rotate 90 degrees
+                controls={"HdrMode": 1}  # Enable HDR
+            )
+        else:
+            config_cam = picam2.create_still_configuration(
+                main={"size": (config['resolution']['width'],
+                              config['resolution']['height'])},
+                transform=Transform(hflip=0, vflip=0, rotation=270)  # Rotate 90 degrees
+            )
         picam2.configure(config_cam)
 
         # Start camera

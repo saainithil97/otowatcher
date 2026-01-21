@@ -560,12 +560,30 @@ def start_stream():
             pass  # If we can't check, proceed anyway
         
         try:
+            # Load config for HDR check
+            with open(CONFIG_PATH, 'r') as f:
+                user_config = json.load(f)
+
             # Initialize Camera Module v3 for streaming (lower resolution for bandwidth)
             stream_camera = Picamera2()
-            config = stream_camera.create_video_configuration(
-                main={"size": (1280, 960)},
-                transform=Transform(hflip=0, vflip=0, rotation=270)
-            )
+
+            # Check if HDR mode is enabled
+            hdr_enabled = user_config.get('camera_settings', {}).get('hdr_mode', False)
+
+            if hdr_enabled:
+                # HDR mode requires special configuration
+                print("HDR mode enabled for stream")
+                config = stream_camera.create_video_configuration(
+                    main={"size": (1280, 960)},
+                    transform=Transform(hflip=0, vflip=0, rotation=270),
+                    controls={"HdrMode": 1}  # Enable HDR
+                )
+            else:
+                config = stream_camera.create_video_configuration(
+                    main={"size": (1280, 960)},
+                    transform=Transform(hflip=0, vflip=0, rotation=270)
+                )
+
             stream_camera.configure(config)
             stream_camera.start()
 
@@ -741,10 +759,23 @@ def capture_now():
         config_rotation = config.get('rotation', 90)
         libcamera_rotation = (360 - config_rotation) % 360
 
-        capture_config = picam2.create_still_configuration(
-            main={"size": (width, height)},
-            transform=Transform(hflip=0, vflip=0, rotation=libcamera_rotation)
-        )
+        # Check if HDR mode is enabled
+        hdr_enabled = config.get('camera_settings', {}).get('hdr_mode', False)
+
+        if hdr_enabled:
+            # HDR mode requires special configuration
+            print("HDR mode enabled for capture")
+            capture_config = picam2.create_still_configuration(
+                main={"size": (width, height)},
+                transform=Transform(hflip=0, vflip=0, rotation=libcamera_rotation),
+                controls={"HdrMode": 1}  # Enable HDR
+            )
+        else:
+            capture_config = picam2.create_still_configuration(
+                main={"size": (width, height)},
+                transform=Transform(hflip=0, vflip=0, rotation=libcamera_rotation)
+            )
+
         picam2.configure(capture_config)
         picam2.start()
 
