@@ -141,7 +141,9 @@ class APIDefaults:
     DISK_WARNING_THRESHOLD = 80
 
     # Systemctl command timeout (seconds)
-    SYSTEMCTL_TIMEOUT = 5
+    # Increased to 30s to handle graceful shutdown of capture service
+    # (capture.py may be sleeping for up to capture_interval_seconds)
+    SYSTEMCTL_TIMEOUT = 30
 
     # Stream frame rate
     STREAM_FPS = 10
