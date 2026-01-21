@@ -137,14 +137,14 @@ def is_within_capture_window(config):
         return True
 
 def apply_camera_settings(picam2, settings):
-    """Apply optimized camera settings for RGB LED aquarium lighting"""
+    """Apply optimized camera settings for Camera Module v3 (IMX708) with RGB LED aquarium lighting"""
     try:
         camera_controls = {}
-        
+
         # Exposure compensation (reduce for bright lights)
         if 'exposure_compensation' in settings:
             camera_controls['ExposureValue'] = settings['exposure_compensation']
-        
+
         # Auto White Balance mode
         awb_mode = settings.get('awb_mode', 'auto').lower()
         if awb_mode == 'auto':
@@ -155,32 +155,56 @@ def apply_camera_settings(picam2, settings):
                 settings.get('awb_gains_red', 1.5),
                 settings.get('awb_gains_blue', 1.8)
             )
-        
+
         # Metering mode for center-weighted exposure
         metering = settings.get('metering_mode', 'CentreWeighted')
         if metering == 'CentreWeighted':
             camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.CentreWeighted
         elif metering == 'Spot':
             camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.Spot
-        
-        # Sharpness
+        elif metering == 'Matrix':
+            camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.Matrix
+
+        # Camera Module v3 optimizations
+        # Noise reduction (leverage IMX708's improved low-light performance)
+        if 'noise_reduction_mode' in settings:
+            noise_mode = settings['noise_reduction_mode']
+            if noise_mode == 'HighQuality':
+                camera_controls['NoiseReductionMode'] = controls.draft.NoiseReductionModeEnum.HighQuality
+            elif noise_mode == 'Fast':
+                camera_controls['NoiseReductionMode'] = controls.draft.NoiseReductionModeEnum.Fast
+            elif noise_mode == 'Minimal':
+                camera_controls['NoiseReductionMode'] = controls.draft.NoiseReductionModeEnum.Minimal
+
+        # Sharpness (IMX708 has better native sharpness)
         if 'sharpness' in settings:
             camera_controls['Sharpness'] = settings['sharpness']
-        
+
         # Contrast
         if 'contrast' in settings:
             camera_controls['Contrast'] = settings['contrast']
-        
+
         # Brightness
         if 'brightness' in settings:
             camera_controls['Brightness'] = settings['brightness']
-        
+
         # Saturation
         if 'saturation' in settings:
             camera_controls['Saturation'] = settings['saturation']
-        
+
+        # HDR mode for Camera v3 (if enabled)
+        if settings.get('hdr_mode', False):
+            logging.info("HDR mode requested (requires picamera2 HDR support)")
+
+        # Frame duration limits (for consistent exposure with aquarium lighting flicker)
+        if 'frame_duration_limits' in settings:
+            min_duration = settings['frame_duration_limits'].get('min_us')
+            max_duration = settings['frame_duration_limits'].get('max_us')
+            if min_duration and max_duration:
+                camera_controls['FrameDurationLimits'] = (min_duration, max_duration)
+
         picam2.set_controls(camera_controls)
-        logging.info(f"Applied camera settings: {camera_controls}")
+        logging.info(f"Applied Camera Module v3 settings: {camera_controls}")
         return True
     except Exception as e:
         logging.error(f"Failed to apply camera settings: {e}")
@@ -225,24 +249,35 @@ def main():
     # Initialize camera
     try:
         picam2 = Picamera2()
-        
-        # Configure camera
+
+        # Configure camera for Camera Module v3 (IMX708)
         config_cam = picam2.create_still_configuration(
-            main={"size": (config['resolution']['width'], 
+            main={"size": (config['resolution']['width'],
                           config['resolution']['height'])},
             transform=Transform(hflip=0, vflip=0, rotation=270)  # Rotate 90 degrees
-	)
+        )
         picam2.configure(config_cam)
-        
+
         # Start camera
         picam2.start()
+
+        # Camera Module v3 has autofocus - set to continuous AF mode for aquarium
+        try:
+            picam2.set_controls({
+                "AfMode": controls.AfModeEnum.Continuous,
+                "AfSpeed": controls.AfSpeedEnum.Fast
+            })
+            logging.info("Autofocus enabled (Camera Module v3)")
+        except Exception as af_error:
+            logging.warning(f"Could not enable autofocus: {af_error}")
+
         time.sleep(2)  # Let camera warm up and adjust
-        
-        # Apply optimized camera settings for RGB LED aquarium
+
+        # Apply optimized camera settings for Camera Module v3 with RGB LED aquarium
         if 'camera_settings' in config:
             apply_camera_settings(picam2, config['camera_settings'])
-        
-        logging.info("Camera initialized successfully")
+
+        logging.info("Camera Module v3 initialized successfully")
     except Exception as e:
         logging.error(f"Failed to initialize camera: {e}")
         sys.exit(1)

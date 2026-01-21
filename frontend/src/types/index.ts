@@ -1,5 +1,5 @@
 // API Response Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse {
   success: boolean;
   error?: string;
   [key: string]: any;
