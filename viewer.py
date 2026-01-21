@@ -447,17 +447,19 @@ def get_systemctl_status(service):
         }
 
 def apply_stream_camera_settings(picam2, config_path=CONFIG_PATH):
-    """Apply camera settings to stream camera"""
+    """Apply Camera Module v3 settings to stream camera"""
     try:
         with open(config_path, 'r') as f:
             config = json.load(f)
-        
+
         camera_settings = config.get('camera_settings', {})
         camera_controls = {}
-        
+
+        # Exposure compensation
         if 'exposure_compensation' in camera_settings:
             camera_controls['ExposureValue'] = camera_settings['exposure_compensation']
-        
+
+        # Auto White Balance
         awb_mode = camera_settings.get('awb_mode', 'auto').lower()
         if awb_mode == 'auto':
             camera_controls['AwbEnable'] = True
@@ -467,13 +469,27 @@ def apply_stream_camera_settings(picam2, config_path=CONFIG_PATH):
                 camera_settings.get('awb_gains_red', 1.5),
                 camera_settings.get('awb_gains_blue', 1.8)
             )
-        
+
+        # Metering mode (Camera v3 supports Matrix mode)
         metering = camera_settings.get('metering_mode', 'CentreWeighted')
         if metering == 'CentreWeighted':
             camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.CentreWeighted
         elif metering == 'Spot':
             camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.Spot
-        
+        elif metering == 'Matrix':
+            camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.Matrix
+
+        # Camera Module v3 noise reduction
+        if 'noise_reduction_mode' in camera_settings:
+            noise_mode = camera_settings['noise_reduction_mode']
+            if noise_mode == 'HighQuality':
+                camera_controls['NoiseReductionMode'] = controls.draft.NoiseReductionModeEnum.HighQuality
+            elif noise_mode == 'Fast':
+                camera_controls['NoiseReductionMode'] = controls.draft.NoiseReductionModeEnum.Fast
+            elif noise_mode == 'Minimal':
+                camera_controls['NoiseReductionMode'] = controls.draft.NoiseReductionModeEnum.Minimal
+
+        # Image processing controls
         if 'sharpness' in camera_settings:
             camera_controls['Sharpness'] = camera_settings['sharpness']
         if 'contrast' in camera_settings:
@@ -482,8 +498,16 @@ def apply_stream_camera_settings(picam2, config_path=CONFIG_PATH):
             camera_controls['Brightness'] = camera_settings['brightness']
         if 'saturation' in camera_settings:
             camera_controls['Saturation'] = camera_settings['saturation']
-        
+
+        # Frame duration limits for LED flicker handling
+        if 'frame_duration_limits' in camera_settings:
+            min_duration = camera_settings['frame_duration_limits'].get('min_us')
+            max_duration = camera_settings['frame_duration_limits'].get('max_us')
+            if min_duration and max_duration:
+                camera_controls['FrameDurationLimits'] = (min_duration, max_duration)
+
         picam2.set_controls(camera_controls)
+        print(f"Applied Camera Module v3 stream settings: {camera_controls}")
         return True
     except Exception as e:
         print(f"Error applying camera settings: {e}")
@@ -536,19 +560,48 @@ def start_stream():
             pass  # If we can't check, proceed anyway
         
         try:
-            # Initialize camera for streaming (lower resolution for bandwidth)
+            # Load config for HDR check
+            with open(CONFIG_PATH, 'r') as f:
+                user_config = json.load(f)
+
+            # Initialize Camera Module v3 for streaming (lower resolution for bandwidth)
             stream_camera = Picamera2()
-            config = stream_camera.create_video_configuration(
-                main={"size": (1280, 960)},
-                transform=Transform(hflip=0, vflip=0, rotation=270)
-            )
+
+            # Check if HDR mode is enabled
+            hdr_enabled = user_config.get('camera_settings', {}).get('hdr_mode', False)
+
+            if hdr_enabled:
+                # HDR mode requires special configuration
+                print("HDR mode enabled for stream")
+                config = stream_camera.create_video_configuration(
+                    main={"size": (1280, 960)},
+                    transform=Transform(hflip=0, vflip=0, rotation=270),
+                    controls={"HdrMode": 1}  # Enable HDR
+                )
+            else:
+                config = stream_camera.create_video_configuration(
+                    main={"size": (1280, 960)},
+                    transform=Transform(hflip=0, vflip=0, rotation=270)
+                )
+
             stream_camera.configure(config)
             stream_camera.start()
+
+            # Camera Module v3: Enable autofocus for streaming
+            try:
+                stream_camera.set_controls({
+                    "AfMode": controls.AfModeEnum.Continuous,
+                    "AfSpeed": controls.AfSpeedEnum.Fast
+                })
+                print("Camera v3 autofocus enabled for stream")
+            except Exception as af_error:
+                print(f"Could not enable autofocus: {af_error}")
+
             time.sleep(1)  # Let camera adjust
-            
-            # Apply settings from config
+
+            # Apply Camera Module v3 settings from config
             apply_stream_camera_settings(stream_camera)
-            
+
             stream_active = True
             return jsonify({"success": True, "message": "Stream started"})
         except Exception as e:
@@ -691,36 +744,59 @@ def capture_now():
         
         output_path = os.path.join(date_dir, f"{time_str}.jpg")
         
-        # Initialize camera
+        # Initialize Camera Module v3
         picam2 = Picamera2()
-        
+
         # Create configuration with resolution from config
         resolution = config.get('resolution', '3280x2464')
         if isinstance(resolution, str):
             width, height = map(int, resolution.split('x'))
         else:
             width, height = resolution['width'], resolution['height']
-        
+
         # Rotation: config has 'rotation': 90, but libcamera wants 270 for clockwise
         # Apply inverse: if config says 90 (clockwise), use 270 in libcamera
         config_rotation = config.get('rotation', 90)
         libcamera_rotation = (360 - config_rotation) % 360
-        
-        capture_config = picam2.create_still_configuration(
-            main={"size": (width, height)},
-            transform=Transform(hflip=0, vflip=0, rotation=libcamera_rotation)
-        )
+
+        # Check if HDR mode is enabled
+        hdr_enabled = config.get('camera_settings', {}).get('hdr_mode', False)
+
+        if hdr_enabled:
+            # HDR mode requires special configuration
+            print("HDR mode enabled for capture")
+            capture_config = picam2.create_still_configuration(
+                main={"size": (width, height)},
+                transform=Transform(hflip=0, vflip=0, rotation=libcamera_rotation),
+                controls={"HdrMode": 1}  # Enable HDR
+            )
+        else:
+            capture_config = picam2.create_still_configuration(
+                main={"size": (width, height)},
+                transform=Transform(hflip=0, vflip=0, rotation=libcamera_rotation)
+            )
+
         picam2.configure(capture_config)
         picam2.start()
-        time.sleep(1)  # Let camera adjust
-        
-        # Apply camera settings from config
+
+        # Camera Module v3: Enable autofocus
+        try:
+            picam2.set_controls({
+                "AfMode": controls.AfModeEnum.Continuous,
+                "AfSpeed": controls.AfSpeedEnum.Fast
+            })
+        except Exception as af_error:
+            print(f"Could not enable autofocus: {af_error}")
+
+        time.sleep(2)  # Let camera adjust
+
+        # Apply Camera Module v3 settings from config
         camera_settings = config.get('camera_settings', {})
         camera_controls = {}
-        
+
         if 'exposure_compensation' in camera_settings:
             camera_controls['ExposureValue'] = camera_settings['exposure_compensation']
-        
+
         awb_mode = camera_settings.get('awb_mode', 'auto').lower()
         if awb_mode == 'auto':
             camera_controls['AwbEnable'] = True
@@ -730,13 +806,25 @@ def capture_now():
                 camera_settings.get('awb_gains_red', 1.5),
                 camera_settings.get('awb_gains_blue', 1.8)
             )
-        
+
         metering = camera_settings.get('metering_mode', 'CentreWeighted')
         if metering == 'CentreWeighted':
             camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.CentreWeighted
         elif metering == 'Spot':
             camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.Spot
-        
+        elif metering == 'Matrix':
+            camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.Matrix
+
+        # Camera Module v3 noise reduction
+        if 'noise_reduction_mode' in camera_settings:
+            noise_mode = camera_settings['noise_reduction_mode']
+            if noise_mode == 'HighQuality':
+                camera_controls['NoiseReductionMode'] = controls.draft.NoiseReductionModeEnum.HighQuality
+            elif noise_mode == 'Fast':
+                camera_controls['NoiseReductionMode'] = controls.draft.NoiseReductionModeEnum.Fast
+            elif noise_mode == 'Minimal':
+                camera_controls['NoiseReductionMode'] = controls.draft.NoiseReductionModeEnum.Minimal
+
         if 'sharpness' in camera_settings:
             camera_controls['Sharpness'] = camera_settings['sharpness']
         if 'contrast' in camera_settings:
@@ -745,7 +833,14 @@ def capture_now():
             camera_controls['Brightness'] = camera_settings['brightness']
         if 'saturation' in camera_settings:
             camera_controls['Saturation'] = camera_settings['saturation']
-        
+
+        # Frame duration limits for LED flicker handling
+        if 'frame_duration_limits' in camera_settings:
+            min_duration = camera_settings['frame_duration_limits'].get('min_us')
+            max_duration = camera_settings['frame_duration_limits'].get('max_us')
+            if min_duration and max_duration:
+                camera_controls['FrameDurationLimits'] = (min_duration, max_duration)
+
         if camera_controls:
             picam2.set_controls(camera_controls)
         
