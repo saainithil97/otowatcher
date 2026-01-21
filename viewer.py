@@ -2,9 +2,12 @@
 """
 Beautiful Flask web app to view latest timelapse photo
 Using Tailwind CSS + DaisyUI
+
+DEPRECATED: Use app.py instead for the new modular architecture.
+This file is kept for backward compatibility.
 """
 
-from flask import Flask, render_template, send_file, jsonify, request, Response
+from flask import Flask, send_file, jsonify, request, Response, send_from_directory
 import os
 import json
 import subprocess
@@ -35,7 +38,12 @@ except ImportError:
     except ImportError:
         HAS_CAMERA = False
 
-app = Flask(__name__)
+# Point to React build directory
+FRONTEND_BUILD = Path(__file__).parent / 'frontend' / 'dist'
+
+app = Flask(__name__,
+            static_folder=str(FRONTEND_BUILD / 'assets'),
+            static_url_path='/assets')
 
 # Configuration
 import sys
@@ -132,13 +140,8 @@ def get_image_stats():
 
 @app.route('/')
 def index():
-    """Main page showing latest image"""
-    latest = get_latest_image()
-    stats = get_image_stats()
-    
-    return render_template('index.html', 
-                         has_image=(latest is not None),
-                         stats=stats)
+    """Serve React SPA index.html"""
+    return send_from_directory(FRONTEND_BUILD, 'index.html')
 
 @app.route('/latest.jpg')
 def latest_image():
@@ -1083,6 +1086,20 @@ def find_closest_image(target_date, target_time):
     except Exception as e:
         print(f"Error finding closest image: {e}")
         return None
+
+# Catch-all route for React Router (must be at the end)
+@app.route('/<path:path>')
+def catch_all(path):
+    """Catch-all for React Router - serve index.html for client-side routing"""
+    # Check if it's a file request (has extension)
+    if '.' in path.split('/')[-1]:
+        # Try to serve the file from build directory
+        try:
+            return send_from_directory(FRONTEND_BUILD, path)
+        except:
+            return send_from_directory(FRONTEND_BUILD, 'index.html')
+    # Otherwise, let React Router handle it
+    return send_from_directory(FRONTEND_BUILD, 'index.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
