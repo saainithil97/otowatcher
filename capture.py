@@ -12,8 +12,11 @@ from datetime import datetime, timedelta, time as dt_time
 from pathlib import Path
 import logging
 from picamera2 import Picamera2
-from libcamera import Transform, controls
 import signal
+
+# Import shared modules
+from camera_config import CameraConfig, load_camera_config
+from config_constants import PathConfig
 
 # Global flag for graceful shutdown
 shutdown_flag = False
@@ -136,75 +139,8 @@ def is_within_capture_window(config):
         logging.warning(f"Error checking capture window: {e}, defaulting to capture")
         return True
 
-def apply_camera_settings(picam2, settings):
-    """Apply optimized camera settings for Camera Module v3 (IMX708) with RGB LED aquarium lighting"""
-    try:
-        camera_controls = {}
-
-        # Exposure compensation (reduce for bright lights)
-        if 'exposure_compensation' in settings:
-            camera_controls['ExposureValue'] = settings['exposure_compensation']
-
-        # Auto White Balance mode
-        awb_mode = settings.get('awb_mode', 'auto').lower()
-        if awb_mode == 'auto':
-            camera_controls['AwbEnable'] = True
-        elif awb_mode == 'custom':
-            camera_controls['AwbEnable'] = False
-            camera_controls['ColourGains'] = (
-                settings.get('awb_gains_red', 1.5),
-                settings.get('awb_gains_blue', 1.8)
-            )
-
-        # Metering mode for center-weighted exposure
-        metering = settings.get('metering_mode', 'CentreWeighted')
-        if metering == 'CentreWeighted':
-            camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.CentreWeighted
-        elif metering == 'Spot':
-            camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.Spot
-        elif metering == 'Matrix':
-            camera_controls['AeMeteringMode'] = controls.AeMeteringModeEnum.Matrix
-
-        # Camera Module v3 optimizations
-        # Noise reduction (leverage IMX708's improved low-light performance)
-        if 'noise_reduction_mode' in settings:
-            noise_mode = settings['noise_reduction_mode']
-            if noise_mode == 'HighQuality':
-                camera_controls['NoiseReductionMode'] = controls.draft.NoiseReductionModeEnum.HighQuality
-            elif noise_mode == 'Fast':
-                camera_controls['NoiseReductionMode'] = controls.draft.NoiseReductionModeEnum.Fast
-            elif noise_mode == 'Minimal':
-                camera_controls['NoiseReductionMode'] = controls.draft.NoiseReductionModeEnum.Minimal
-
-        # Sharpness (IMX708 has better native sharpness)
-        if 'sharpness' in settings:
-            camera_controls['Sharpness'] = settings['sharpness']
-
-        # Contrast
-        if 'contrast' in settings:
-            camera_controls['Contrast'] = settings['contrast']
-
-        # Brightness
-        if 'brightness' in settings:
-            camera_controls['Brightness'] = settings['brightness']
-
-        # Saturation
-        if 'saturation' in settings:
-            camera_controls['Saturation'] = settings['saturation']
-
-        # Frame duration limits (for consistent exposure with aquarium lighting flicker)
-        if 'frame_duration_limits' in settings:
-            min_duration = settings['frame_duration_limits'].get('min_us')
-            max_duration = settings['frame_duration_limits'].get('max_us')
-            if min_duration and max_duration:
-                camera_controls['FrameDurationLimits'] = (min_duration, max_duration)
-
-        picam2.set_controls(camera_controls)
-        logging.info(f"Applied Camera Module v3 settings: {camera_controls}")
-        return True
-    except Exception as e:
-        logging.error(f"Failed to apply camera settings: {e}")
-        return False
+# Camera settings now handled by shared camera_config module
+# Removed duplicate apply_camera_settings() function
 
 def capture_image(picam2, output_path, quality=90):
     """Capture a single image"""
@@ -242,50 +178,13 @@ def main():
     logging.info(f"Image retention: {config['keep_days']} days")
     logging.info(f"Resolution: {config['resolution']['width']}x{config['resolution']['height']}")
     
-    # Initialize camera
+    # Initialize camera using shared camera_config module
     try:
         picam2 = Picamera2()
 
-        # Check if HDR mode is enabled (Camera Module v3 feature)
-        hdr_enabled = config.get('camera_settings', {}).get('hdr_mode', False)
-
-        # Configure camera for Camera Module v3 (IMX708)
-        if hdr_enabled:
-            logging.info("HDR mode enabled")
-            config_cam = picam2.create_still_configuration(
-                main={"size": (config['resolution']['width'],
-                              config['resolution']['height'])},
-                transform=Transform(hflip=0, vflip=0, rotation=270),  # Rotate 90 degrees
-                controls={"HdrMode": 1}  # Enable HDR
-            )
-        else:
-            config_cam = picam2.create_still_configuration(
-                main={"size": (config['resolution']['width'],
-                              config['resolution']['height'])},
-                transform=Transform(hflip=0, vflip=0, rotation=270)  # Rotate 90 degrees
-            )
-        picam2.configure(config_cam)
-
-        # Start camera
-        picam2.start()
-
-        # Camera Module v3 has autofocus - set to continuous AF mode for aquarium
-        try:
-            picam2.set_controls({
-                "AfMode": controls.AfModeEnum.Continuous,
-                "AfSpeed": controls.AfSpeedEnum.Fast
-            })
-            logging.info("Autofocus enabled (Camera Module v3)")
-        except Exception as af_error:
-            logging.warning(f"Could not enable autofocus: {af_error}")
-
-        time.sleep(2)  # Let camera warm up and adjust
-
-        # Apply optimized camera settings for Camera Module v3 with RGB LED aquarium
-        if 'camera_settings' in config:
-            apply_camera_settings(picam2, config['camera_settings'])
-
-        logging.info("Camera Module v3 initialized successfully")
+        # Use centralized camera initialization
+        if not CameraConfig.initialize_camera_for_capture(picam2, config, logger=logging):
+            sys.exit(1)
     except Exception as e:
         logging.error(f"Failed to initialize camera: {e}")
         sys.exit(1)
