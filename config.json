@@ -4,11 +4,17 @@
     "awb_gains_red": 1.5,
     "awb_mode": "auto",
     "brightness": 0,
-    "contrast": 1.2,
-    "exposure_compensation": -0.4,
+    "contrast": 1.15,
+    "exposure_compensation": -0.3,
     "metering_mode": "CentreWeighted",
-    "saturation": 1,
-    "sharpness": 1.5
+    "saturation": 1.05,
+    "sharpness": 1.8,
+    "noise_reduction_mode": "HighQuality",
+    "hdr_mode": false,
+    "frame_duration_limits": {
+      "min_us": 100,
+      "max_us": 120000
+    }
   },
   "capture_interval_seconds": 60,
   "capture_window": {

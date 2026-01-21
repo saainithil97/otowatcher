@@ -21,8 +21,8 @@ const api = axios.create({
 export const apiClient = {
   // Stats
   async getStats(): Promise<Stats> {
-    const { data } = await api.get<ApiResponse<Stats>>('/api/stats');
-    return data as Stats;
+    const { data } = await api.get<Stats>('/api/stats');
+    return data;
   },
 
   // Gallery
@@ -78,9 +78,13 @@ export const apiClient = {
   },
 
   // Calendar
-  async getCalendarDays(year: number, month: number): Promise<string[]> {
+  async getCalendarDays(year: number, month: number): Promise<{ days: string[]; year: number; month: number }> {
     const { data } = await api.get<ApiResponse>(`/api/calendar/days?year=${year}&month=${month}`);
-    return data.days || [];
+    return {
+      days: data.days || [],
+      year: data.year,
+      month: data.month,
+    };
   },
 
   async getCalendarImages(date: string): Promise<ImageInfo[]> {

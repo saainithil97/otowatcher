@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import LatestView from './views/LatestView';
+import LiveView from './views/LiveView';
 import Dock from './components/Dock';
 
 // Create a client
@@ -13,29 +13,23 @@ const queryClient = new QueryClient({
   },
 });
 
-type Section = 'latest' | 'live' | 'gallery' | 'calendar' | 'compare' | 'settings' | 'services';
+type Section = 'live' | 'stream' | 'settings' | 'services';
 
 function App() {
-  const [activeSection, setActiveSection] = useState<Section>('latest');
+  const [activeSection, setActiveSection] = useState<Section>('live');
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'latest':
-        return <LatestView />;
       case 'live':
-        return <div className="text-center p-12">Live Stream - Coming Soon</div>;
-      case 'gallery':
-        return <div className="text-center p-12">Gallery - Coming Soon</div>;
-      case 'calendar':
-        return <div className="text-center p-12">Calendar - Coming Soon</div>;
-      case 'compare':
-        return <div className="text-center p-12">Compare - Coming Soon</div>;
+        return <LiveView />;
+      case 'stream':
+        return <div className="text-center p-12">MJPEG Stream - Coming Soon</div>;
       case 'settings':
         return <div className="text-center p-12">Settings - Coming Soon</div>;
       case 'services':
         return <div className="text-center p-12">Services - Coming Soon</div>;
       default:
-        return <LatestView />;
+        return <LiveView />;
     }
   };
 
