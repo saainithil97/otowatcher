@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LiveView from './views/LiveView';
+import GalleryView from './views/GalleryView';
+import SettingsView from './views/SettingsView';
 import Dock from './components/Dock';
 
 // Create a client
@@ -13,7 +15,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type Section = 'live' | 'stream' | 'settings' | 'services';
+type Section = 'live' | 'gallery' | 'settings';
 
 function App() {
   const [activeSection, setActiveSection] = useState<Section>('live');
@@ -22,12 +24,10 @@ function App() {
     switch (activeSection) {
       case 'live':
         return <LiveView />;
-      case 'stream':
-        return <div className="text-center p-12">MJPEG Stream - Coming Soon</div>;
+      case 'gallery':
+        return <GalleryView />;
       case 'settings':
-        return <div className="text-center p-12">Settings - Coming Soon</div>;
-      case 'services':
-        return <div className="text-center p-12">Services - Coming Soon</div>;
+        return <SettingsView />;
       default:
         return <LiveView />;
     }
