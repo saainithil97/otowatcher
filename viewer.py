@@ -254,11 +254,21 @@ def update_config():
 def get_service_status():
     """Get status of all services"""
     try:
-        services = {
-            'capture': get_systemctl_status('timelapse.service'),
-            'sync_timer': get_systemctl_status('timelapse-sync.timer'),
-            'cleanup_timer': get_systemctl_status('timelapse-cleanup.timer')
+        # Service names for display
+        service_names = {
+            'capture': 'Image Capture Service',
+            'sync_timer': 'Google Drive Sync Timer',
+            'cleanup_timer': 'Image Cleanup Timer'
         }
+
+        services = {}
+        for key, service_file in [('capture', 'timelapse.service'),
+                                   ('sync_timer', 'timelapse-sync.timer'),
+                                   ('cleanup_timer', 'timelapse-cleanup.timer')]:
+            status = get_systemctl_status(service_file)
+            status['name'] = service_names[key]
+            services[key] = status
+
         return jsonify({"success": True, "services": services})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -271,17 +281,27 @@ def control_service(action):
         request_data = request.get_json(silent=True)
         if not request_data:
             return jsonify({"success": False, "error": "No request body provided"}), 400
-        
-        service = request_data.get('service', 'timelapse.service')
-        
+
+        service_key = request_data.get('service', 'capture')
+
+        # Map service keys to actual systemd service names
+        service_map = {
+            'capture': 'timelapse.service',
+            'sync_timer': 'timelapse-sync.timer',
+            'cleanup_timer': 'timelapse-cleanup.timer',
+            # Also accept full service names for backward compatibility
+            'timelapse.service': 'timelapse.service',
+            'timelapse-sync.timer': 'timelapse-sync.timer',
+            'timelapse-cleanup.timer': 'timelapse-cleanup.timer'
+        }
+
+        service = service_map.get(service_key)
+        if not service:
+            return jsonify({"success": False, "error": f"Invalid service: {service_key}"}), 400
+
         # Validate action
         if action not in ['start', 'stop', 'restart']:
             return jsonify({"success": False, "error": f"Invalid action: {action}"}), 400
-        
-        # Validate service name
-        valid_services = ['timelapse.service', 'timelapse-sync.timer', 'timelapse-cleanup.timer']
-        if service not in valid_services:
-            return jsonify({"success": False, "error": f"Invalid service: {service}. Valid: {valid_services}"}), 400
         
         # Execute systemctl command
         cmd = ['systemctl', '--user', action, service]
