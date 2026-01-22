@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/home/saainithil97/projects/timelapse
-ExecStart=/usr/bin/gunicorn --workers 2 --bind 0.0.0.0:5000 --timeout 120 viewer:app
+ExecStart=/usr/bin/gunicorn --workers 2 --bind 0.0.0.0:5000 --timeout 120 app:app
 Restart=always
 RestartSec=10
 StandardOutput=journal

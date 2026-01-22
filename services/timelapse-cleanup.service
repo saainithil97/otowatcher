@@ -5,6 +5,6 @@ After=timelapse-sync.service
 [Service]
 Type=oneshot
 WorkingDirectory=/home/saainithil97/projects/timelapse
-ExecStart=/bin/bash /home/saainithil97/projects/timelapse/cleanup.sh
+ExecStart=/bin/bash /home/saainithil97/projects/timelapse/scripts/cleanup.sh
 StandardOutput=journal
 StandardError=journal
