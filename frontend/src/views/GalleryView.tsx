@@ -76,6 +76,12 @@ export default function GalleryView() {
 
   // Flipbook: Auto-play at 10 fps (100ms interval)
   useEffect(() => {
+    // Clear any existing interval first
+    if (flipbookIntervalRef.current) {
+      clearInterval(flipbookIntervalRef.current);
+      flipbookIntervalRef.current = null;
+    }
+
     if (isFlipbookMode && isPlaying && flipbookImages.length > 0) {
       flipbookIntervalRef.current = setInterval(() => {
         setCurrentFlipbookIndex((prevIndex) => {
@@ -86,13 +92,14 @@ export default function GalleryView() {
           return prevIndex + 1;
         });
       }, 100); // 10 fps = 100ms per frame
-
-      return () => {
-        if (flipbookIntervalRef.current) {
-          clearInterval(flipbookIntervalRef.current);
-        }
-      };
     }
+
+    return () => {
+      if (flipbookIntervalRef.current) {
+        clearInterval(flipbookIntervalRef.current);
+        flipbookIntervalRef.current = null;
+      }
+    };
   }, [isFlipbookMode, isPlaying, flipbookImages.length]);
 
   // Flipbook: Keyboard controls (ESC to exit, arrow keys to navigate)
