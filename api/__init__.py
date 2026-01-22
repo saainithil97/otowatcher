@@ -11,11 +11,12 @@ from config_constants import PathConfig
 
 def create_app():
     """Application factory"""
-    # Point to React build directory
-    frontend_build = Path(__file__).parent.parent / 'frontend' / 'dist'
+    # Point to static directory (deployed React build)
+    # Note: frontend/deploy.sh deploys dist/ to static/
+    static_dir = Path(__file__).parent.parent / 'static'
 
     app = Flask(__name__,
-                static_folder=str(frontend_build / 'assets'),
+                static_folder=str(static_dir / 'assets'),
                 static_url_path='/assets')
 
     # Ensure directories exist
@@ -42,7 +43,7 @@ def create_app():
     @app.route('/')
     def index():
         """Serve React SPA index.html"""
-        return send_from_directory(frontend_build, 'index.html')
+        return send_from_directory(static_dir, 'index.html')
 
     # Catch-all route for React Router (SPA routing)
     @app.route('/<path:path>')
@@ -50,12 +51,12 @@ def create_app():
         """Catch-all for React Router - serve index.html for client-side routing"""
         # Check if it's a file request (has extension)
         if '.' in path.split('/')[-1]:
-            # Try to serve the file from assets
+            # Try to serve the file from static
             try:
-                return send_from_directory(frontend_build, path)
+                return send_from_directory(static_dir, path)
             except:
-                return send_from_directory(frontend_build, 'index.html')
+                return send_from_directory(static_dir, 'index.html')
         # Otherwise, let React Router handle it
-        return send_from_directory(frontend_build, 'index.html')
+        return send_from_directory(static_dir, 'index.html')
 
     return app
