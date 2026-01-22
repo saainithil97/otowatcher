@@ -94,7 +94,9 @@ class CameraConfig:
                 if min_duration and max_duration:
                     camera_controls['FrameDurationLimits'] = (min_duration, max_duration)
 
-            picam2.set_controls(camera_controls)
+            if camera_controls:
+                picam2.set_controls(camera_controls)
+                print(f"Applied camera controls: {list(camera_controls.keys())}")
             return True
         except Exception as e:
             print(f"Failed to apply camera settings: {e}")

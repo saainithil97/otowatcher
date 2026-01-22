@@ -231,9 +231,12 @@ def main():
                 cleanup_old_images(config['storage_path'], config['keep_days'])
                 last_cleanup = datetime.now()
                 logging.info(f"Statistics - Captured: {capture_count}, Skipped: {skip_count}")
-            
-            # Wait for next interval
-            time.sleep(config['capture_interval_seconds'])
+
+            # Wait for next interval (with interruptible sleep for faster shutdown)
+            sleep_interval = config['capture_interval_seconds']
+            sleep_start = time.time()
+            while not shutdown_flag and (time.time() - sleep_start) < sleep_interval:
+                time.sleep(1)  # Sleep in 1-second chunks to check shutdown_flag frequently
     
     except Exception as e:
         logging.error(f"Error in main loop: {e}", exc_info=True)

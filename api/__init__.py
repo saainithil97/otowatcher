@@ -3,16 +3,21 @@ API Module
 Flask application factory and initialization
 """
 
-from flask import Flask, render_template
+from flask import Flask, send_from_directory
+from pathlib import Path
 
 from config_constants import PathConfig
 
 
 def create_app():
     """Application factory"""
+    # Point to static directory (deployed React build)
+    # Note: frontend/deploy.sh deploys dist/ to static/
+    static_dir = Path(__file__).parent.parent / 'static'
+
     app = Flask(__name__,
-                template_folder='../templates',
-                static_folder='../static')
+                static_folder=str(static_dir / 'assets'),
+                static_url_path='/assets')
 
     # Ensure directories exist
     PathConfig.ensure_directories()
@@ -34,18 +39,24 @@ def create_app():
     app.register_blueprint(calendar_bp)
     app.register_blueprint(comparison_bp)
 
-    # Keep index route in main app (not moved to blueprint)
+    # Serve React SPA
     @app.route('/')
     def index():
-        """Main page - serves React SPA"""
-        from api.services import ImageService
-        image_service = ImageService(str(PathConfig.IMAGES_DIR))
+        """Serve React SPA index.html"""
+        return send_from_directory(static_dir, 'index.html')
 
-        latest = image_service.get_latest_image()
-        stats = image_service.get_image_stats()
-
-        return render_template('index.html',
-                             has_image=(latest is not None),
-                             stats=stats)
+    # Catch-all route for React Router (SPA routing)
+    @app.route('/<path:path>')
+    def catch_all(path):
+        """Catch-all for React Router - serve index.html for client-side routing"""
+        # Check if it's a file request (has extension)
+        if '.' in path.split('/')[-1]:
+            # Try to serve the file from static
+            try:
+                return send_from_directory(static_dir, path)
+            except:
+                return send_from_directory(static_dir, 'index.html')
+        # Otherwise, let React Router handle it
+        return send_from_directory(static_dir, 'index.html')
 
     return app

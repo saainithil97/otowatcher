@@ -194,6 +194,55 @@ export default function SettingsView() {
             </div>
           </div>
 
+          {/* Capture Window */}
+          <div className="card bg-base-100 shadow-xl">
+            <div className="card-body">
+              <h3 className="card-title">Capture Window</h3>
+
+              <div className="form-control">
+                <label className="cursor-pointer label">
+                  <span className="label-text">Enable Time Window</span>
+                  <input
+                    type="checkbox"
+                    checked={editedConfig.capture_window?.enabled || false}
+                    onChange={(e) => handleConfigChange('capture_window.enabled', e.target.checked)}
+                    className="checkbox checkbox-primary"
+                  />
+                </label>
+                <label className="label">
+                  <span className="label-text-alt">Only capture during specific hours</span>
+                </label>
+              </div>
+
+              {editedConfig.capture_window?.enabled && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">Start Time</span>
+                    </label>
+                    <input
+                      type="time"
+                      value={editedConfig.capture_window.start_time}
+                      onChange={(e) => handleConfigChange('capture_window.start_time', e.target.value)}
+                      className="input input-bordered"
+                    />
+                  </div>
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">End Time</span>
+                    </label>
+                    <input
+                      type="time"
+                      value={editedConfig.capture_window.end_time}
+                      onChange={(e) => handleConfigChange('capture_window.end_time', e.target.value)}
+                      className="input input-bordered"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Resolution */}
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
