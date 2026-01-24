@@ -92,6 +92,9 @@ export default function GalleryView() {
       } else if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
         toggleFullscreen();
+      } else if (e.key === 'Escape' && isFullscreen) {
+        e.preventDefault();
+        toggleFullscreen();
       }
     };
 
@@ -166,7 +169,7 @@ export default function GalleryView() {
     <div className="min-h-screen">
       {/* Modern Date Tabs */}
       <div className="mb-6">
-        <div className="flex gap-1 p-1 bg-base-200/50 backdrop-blur-sm rounded-xl w-fit">
+        <div className="flex gap-1 p-1 bg-base-100 backdrop-blur-sm rounded-xl">
           {dateOptions.map((option) => (
             <button
               key={option.value}
@@ -213,14 +216,14 @@ export default function GalleryView() {
           className={`relative group ${isFullscreen ? 'h-screen bg-black' : ''}`}
         >
           {/* Preload Progress Banner */}
-          {preloadProgress < 100 && (
+          {/* {preloadProgress < 100 && (
             <div className="mb-4 px-4 py-2 bg-info/10 border border-info/20 rounded-lg flex items-center gap-3">
               <div className="loading loading-spinner loading-sm text-info"></div>
               <span className="text-sm text-base-content/70">
                 Pre-loading images... {preloadProgress}%
               </span>
             </div>
-          )}
+          )} */}
 
           {/* Image Container */}
           <div className={`relative bg-black rounded-xl overflow-hidden ${isFullscreen ? 'h-full' : 'aspect-video'}`}>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import LatestView from './views/LatestView';
 import LiveView from './views/LiveView';
 import GalleryView from './views/GalleryView';
 import SettingsView from './views/SettingsView';
@@ -15,13 +16,15 @@ const queryClient = new QueryClient({
   },
 });
 
-type Section = 'live' | 'gallery' | 'settings';
+type Section = 'latest' | 'live' | 'gallery' | 'settings';
 
 function App() {
-  const [activeSection, setActiveSection] = useState<Section>('live');
+  const [activeSection, setActiveSection] = useState<Section>('latest');
 
   const renderSection = () => {
     switch (activeSection) {
+      case 'latest':
+        return <LatestView />;
       case 'live':
         return <LiveView />;
       case 'gallery':
@@ -29,13 +32,13 @@ function App() {
       case 'settings':
         return <SettingsView />;
       default:
-        return <LiveView />;
+        return <LatestView />;
     }
   };
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-base-200">
         {/* Notification Container */}
         <div id="notification-container" className="fixed top-4 right-4 max-w-md z-40"></div>
 

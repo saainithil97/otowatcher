@@ -87,7 +87,7 @@ export default function SettingsView() {
       <h2 className="text-2xl font-bold mb-4">Settings</h2>
 
       {/* Tabs */}
-      <div className="tabs tabs-boxed mb-6">
+      <div className="tabs bg-base-100 tabs-boxed mb-6">
         <button
           className={`tab ${activeTab === 'config' ? 'tab-active' : ''}`}
           onClick={() => setActiveTab('config')}
