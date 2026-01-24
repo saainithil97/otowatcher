@@ -10,7 +10,7 @@ export default function GalleryView() {
     return today.toISOString().split('T')[0];
   });
   const [currentFlipbookIndex, setCurrentFlipbookIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true); // Auto-play by default
+  const [isPlaying, setIsPlaying] = useState(false); // Auto-play by default
   const flipbookIntervalRef = useRef<number | null>(null);
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
 

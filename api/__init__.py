@@ -5,6 +5,7 @@ Flask application factory and initialization
 
 from flask import Flask, send_from_directory
 from pathlib import Path
+from flask_cors import CORS
 
 from config_constants import PathConfig
 
@@ -19,6 +20,7 @@ def create_app():
                 static_folder=str(static_dir / 'assets'),
                 static_url_path='/assets')
 
+    CORS(app, origins=["http://localhost:3000"])
     # Ensure directories exist
     PathConfig.ensure_directories()
 

@@ -107,60 +107,63 @@ export default function LiveView() {
 
       {/* Image Capture View */}
       {viewMode === 'image' && (
-        <>
-          {/* Control Buttons */}
-          <div className="flex gap-2 mb-4 flex-wrap">
-            <button
-              onClick={() => captureMutation.mutate()}
-              disabled={captureMutation.isPending}
-              className="btn btn-primary"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-              </svg>
-              {captureMutation.isPending ? 'Capturing...' : 'Capture Now'}
-            </button>
-
-            <button onClick={() => setImageKey(Date.now())} className="btn btn-ghost">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-              </svg>
-              Refresh
-            </button>
-
-            <button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`btn ${autoRefresh ? 'btn-active' : 'btn-ghost'}`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-              </svg>
-              Auto-Refresh (30s)
-            </button>
-
+        <>          
+          {/*           
+          <div className="flex gap-2 mb-4 flex-wrap">            
             <a href="/latest.jpg" download className="btn btn-ghost">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
               Download
             </a>
-          </div>
+          </div> */}
 
           {/* Latest Image Display */}
           <div className="card bg-base-100 shadow-xl">
-            <figure className="px-4 pt-4">
-              <img
-                key={imageKey}
-                src={`/latest.jpg?t=${imageKey}`}
-                alt="Latest capture"
-                className="rounded-xl w-full"
-              />
-            </figure>
-            <div className="card-body">
-              <p className="text-base-content/60 text-sm">
-                Last updated: {new Date(imageKey).toLocaleTimeString()}
-              </p>
-            </div>
+            { imageKey && 
+              <figure className="p-4">
+                <img
+                  key={imageKey}
+                  src={`/latest.jpg?t=${imageKey}`}
+                  alt="Latest capture"
+                  className="rounded-xl w-full"
+                />
+                {/* Control Buttons */}
+                  <ul className="menu menu-vertical lg:menu-horizontal backdrop-blur-md rounded-box absolute top-8 left-1/2 -translate-x-1/2">
+                    <li>
+                      <button
+                        onClick={() => captureMutation.mutate()}
+                        disabled={captureMutation.isPending}
+                        className="btn btn-ghost"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                        </svg>
+                        {captureMutation.isPending ? 'Capturing...' : 'Capture Now'}
+                      </button>
+                    </li>
+                    <li>
+                      <button onClick={() => setImageKey(Date.now())} className="btn btn-ghost">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                        </svg>
+                        Refresh
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() => setAutoRefresh(!autoRefresh)}
+                        className={`btn ${autoRefresh ? 'btn-active' : 'btn-ghost'}`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                        </svg>
+                        Auto-Refresh (30s)
+                      </button>
+                    </li>
+                  </ul>
+              </figure>
+            }
           </div>
         </>
       )}
@@ -174,7 +177,7 @@ export default function LiveView() {
               <button
                 onClick={() => startStreamMutation.mutate()}
                 disabled={startStreamMutation.isPending}
-                className="btn btn-primary"
+                className="btn btn-outline btn-primary"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
@@ -185,7 +188,7 @@ export default function LiveView() {
               <button
                 onClick={() => stopStreamMutation.mutate()}
                 disabled={stopStreamMutation.isPending}
-                className="btn btn-error"
+                className="btn btn-outline btn-error"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
@@ -194,12 +197,7 @@ export default function LiveView() {
               </button>
             )}
 
-            {streamActive && (
-              <div className="badge badge-success gap-2">
-                <span className="animate-pulse">●</span>
-                LIVE
-              </div>
-            )}
+            
           </div>
 
           {/* Stream Display */}
@@ -211,6 +209,10 @@ export default function LiveView() {
                   alt="Live stream"
                   className="rounded-xl w-full"
                 />
+                <div className="badge badge-success absolute top-4 right-4 ">
+                  <span className="animate-pulse">●</span>
+                  live
+                </div>
               </figure>
             ) : (
               <div className="card-body">

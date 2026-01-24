@@ -21,13 +21,6 @@
   height: 5rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  .dock {
-    background-color: #1a1a1a;
-    border-top-color: #3a3a3a;
-  }
-}
-
 .dock-item {
   display: flex;
   flex-direction: column;
@@ -50,16 +43,6 @@
 
 .dock-item:hover {
   color: #000;
-}
-
-@media (prefers-color-scheme: dark) {
-  .dock-item {
-    color: #999;
-  }
-
-  .dock-item:hover {
-    color: #fff;
-  }
 }
 
 .dock-label {
